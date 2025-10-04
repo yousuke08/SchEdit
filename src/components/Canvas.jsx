@@ -3,6 +3,7 @@ import './Canvas.css'
 import { GRID_SIZE, snapToGrid, screenToWorld } from '../utils/grid'
 import useSchematicStore from '../store/schematicStore'
 import { distanceToLineSegment } from '../utils/geometry'
+import { shouldCreateWire } from '../utils/wireUtils'
 
 const Canvas = forwardRef(({ showGrid }, ref) => {
   const canvasRef = useRef(null)
@@ -192,12 +193,15 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         // Finish drawing wire
         // Check if start and end points are different
         if (drawingWire.x !== snappedPos.x || drawingWire.y !== snappedPos.y) {
-          addWire({
-            start: drawingWire,
-            end: snappedPos,
-            color: wireColor,
-            thickness: wireThickness
-          })
+          // Check if wire overlaps with existing wires
+          if (shouldCreateWire(drawingWire, snappedPos, wires)) {
+            addWire({
+              start: drawingWire,
+              end: snappedPos,
+              color: wireColor,
+              thickness: wireThickness
+            })
+          }
         }
         setDrawingWire(null)
         setCurrentMousePos(null)
