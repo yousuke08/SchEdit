@@ -4,6 +4,7 @@ import Toolbar from './components/Toolbar'
 import Sidebar from './components/Sidebar'
 import Canvas from './components/Canvas'
 import PropertiesPanel from './components/PropertiesPanel'
+import ComponentPalette from './components/ComponentPalette'
 
 function App() {
   const [showGrid, setShowGrid] = useState(true)
@@ -18,7 +19,7 @@ function App() {
       />
       <div className="main-container">
         <Sidebar position="left" title="部品">
-          <p>部品パレット（後で実装）</p>
+          <ComponentPalette />
         </Sidebar>
         <Canvas ref={canvasRef} showGrid={showGrid} />
         <Sidebar position="right" title="プロパティ">

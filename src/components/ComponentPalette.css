@@ -1,0 +1,55 @@
+.component-palette {
+  padding: 0;
+}
+
+.component-category {
+  margin-bottom: 20px;
+}
+
+.component-category h4 {
+  margin: 0;
+  padding: 10px 15px;
+  background-color: #2a2a2a;
+  border-bottom: 1px solid #444;
+  color: #fff;
+  font-size: 13px;
+}
+
+.component-list {
+  padding: 10px;
+}
+
+.component-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: grab;
+  transition: all 0.2s;
+}
+
+.component-item:hover {
+  background-color: #3a3a3a;
+  border-color: #555;
+}
+
+.component-item.dragging {
+  opacity: 0.5;
+}
+
+.component-item canvas {
+  display: block;
+  margin-bottom: 5px;
+  background-color: #1a1a1a;
+  border-radius: 2px;
+}
+
+.component-item span {
+  font-size: 11px;
+  color: #ccc;
+  text-align: center;
+}

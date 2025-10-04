@@ -4,6 +4,7 @@ import { GRID_SIZE, snapToGrid, screenToWorld } from '../utils/grid'
 import useSchematicStore from '../store/schematicStore'
 import { distanceToLineSegment } from '../utils/geometry'
 import { shouldCreateWire } from '../utils/wireUtils'
+import { getComponentByType } from './componentLibrary'
 
 const Canvas = forwardRef(({ showGrid }, ref) => {
   const canvasRef = useRef(null)
@@ -13,8 +14,24 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 })
   const [drawingWire, setDrawingWire] = useState(null)
   const [currentMousePos, setCurrentMousePos] = useState(null)
+  const [draggingComponent, setDraggingComponent] = useState(null)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
 
-  const { wires, addWire, selectedWireId, setSelectedWire, removeWire, wireColor, wireThickness } = useSchematicStore()
+  const {
+    wires,
+    addWire,
+    selectedWireId,
+    setSelectedWire,
+    removeWire,
+    wireColor,
+    wireThickness,
+    components,
+    addComponent,
+    selectedComponentId,
+    setSelectedComponent,
+    removeComponent,
+    updateComponent
+  } = useSchematicStore()
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -113,6 +130,20 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       }
     })
 
+    // Draw components
+    components.forEach(comp => {
+      ctx.save()
+      ctx.translate(comp.x, comp.y)
+      ctx.rotate(comp.rotation || 0)
+
+      const componentDef = getComponentByType(comp.type)
+      if (componentDef) {
+        componentDef.render(ctx, comp.id === selectedComponentId)
+      }
+
+      ctx.restore()
+    })
+
     // Draw wire being drawn
     if (drawingWire && currentMousePos) {
       const canvas = canvasRef.current
@@ -137,7 +168,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     }
 
     ctx.restore()
-  }, [showGrid, zoom, pan, wires, selectedWireId, drawingWire, currentMousePos, wireColor, wireThickness])
+  }, [showGrid, zoom, pan, wires, selectedWireId, drawingWire, currentMousePos, wireColor, wireThickness, components, selectedComponentId])
 
   const handleMouseDown = (e) => {
     if (e.button === 1 || (e.button === 0 && e.shiftKey)) { // Middle button or Shift+Left
@@ -157,6 +188,40 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       const snappedPos = { x: snapToGrid(worldPos.x), y: snapToGrid(worldPos.y) }
 
       if (!drawingWire) {
+        // Check if clicking on a component first
+        let clickedComponent = null
+        for (const comp of [...components].reverse()) { // Reverse to check top components first
+          const componentDef = getComponentByType(comp.type)
+          if (!componentDef) continue
+
+          const dx = worldPos.x - comp.x
+          const dy = worldPos.y - comp.y
+
+          // Rotate point back to component's local space
+          const angle = -(comp.rotation || 0)
+          const localX = dx * Math.cos(angle) - dy * Math.sin(angle)
+          const localY = dx * Math.sin(angle) + dy * Math.cos(angle)
+
+          // Check if click is within component bounds
+          const halfWidth = componentDef.width / 2
+          const halfHeight = componentDef.height / 2
+          if (Math.abs(localX) <= halfWidth && Math.abs(localY) <= halfHeight) {
+            clickedComponent = comp
+            break
+          }
+        }
+
+        if (clickedComponent) {
+          // Select and start dragging component
+          setSelectedComponent(clickedComponent.id)
+          setDraggingComponent(clickedComponent.id)
+          setDragOffset({
+            x: worldPos.x - clickedComponent.x,
+            y: worldPos.y - clickedComponent.y
+          })
+          return
+        }
+
         // Check if clicking near a grid point (snapped position)
         const gridThreshold = GRID_SIZE / 5
         const distToGrid = Math.sqrt(
@@ -167,6 +232,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         if (distToGrid < gridThreshold) {
           // Clicking on/near a grid point - start drawing wire
           setSelectedWire(null)
+          setSelectedComponent(null)
           setDrawingWire(snappedPos)
         } else {
           // Check if clicking on wire line
@@ -183,9 +249,11 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
           if (clickedWire) {
             // Select wire
             setSelectedWire(clickedWire.id)
+            setSelectedComponent(null)
           } else {
             // Start drawing wire
             setSelectedWire(null)
+            setSelectedComponent(null)
             setDrawingWire(snappedPos)
           }
         }
@@ -220,10 +288,29 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     if (drawingWire) {
       setCurrentMousePos({ x: e.clientX, y: e.clientY })
     }
+
+    if (draggingComponent) {
+      const canvas = canvasRef.current
+      const rect = canvas.getBoundingClientRect()
+      const worldPos = screenToWorld({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      }, pan, zoom)
+
+      const newX = worldPos.x - dragOffset.x
+      const newY = worldPos.y - dragOffset.y
+      const snappedPos = { x: snapToGrid(newX), y: snapToGrid(newY) }
+
+      updateComponent(draggingComponent, {
+        x: snappedPos.x,
+        y: snappedPos.y
+      })
+    }
   }
 
   const handleMouseUp = () => {
     setIsPanning(false)
+    setDraggingComponent(null)
   }
 
   const handleKeyDown = (e) => {
@@ -231,15 +318,55 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       setDrawingWire(null)
       setCurrentMousePos(null)
       setSelectedWire(null)
-    } else if (e.key === 'Delete' && selectedWireId) {
-      removeWire(selectedWireId)
+      setSelectedComponent(null)
+    } else if (e.key === 'Delete') {
+      if (selectedWireId) {
+        removeWire(selectedWireId)
+      } else if (selectedComponentId) {
+        removeComponent(selectedComponentId)
+      }
+    } else if (e.key === 'r' || e.key === 'R') {
+      if (selectedComponentId) {
+        const component = components.find(c => c.id === selectedComponentId)
+        if (component) {
+          const currentRotation = component.rotation || 0
+          updateComponent(selectedComponentId, {
+            rotation: currentRotation + Math.PI / 2
+          })
+        }
+      }
     }
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    const componentType = e.dataTransfer.getData('componentType')
+    if (!componentType) return
+
+    const canvas = canvasRef.current
+    const rect = canvas.getBoundingClientRect()
+    const worldPos = screenToWorld({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    }, pan, zoom)
+    const snappedPos = { x: snapToGrid(worldPos.x), y: snapToGrid(worldPos.y) }
+
+    addComponent({
+      type: componentType,
+      x: snappedPos.x,
+      y: snappedPos.y,
+      rotation: 0
+    })
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
   }
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedWireId, drawingWire])
+  }, [selectedWireId, selectedComponentId, drawingWire])
 
   const handleWheel = (e) => {
     e.preventDefault()
@@ -274,6 +401,8 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onWheel={handleWheel}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
         style={{ cursor: isPanning ? 'grabbing' : 'crosshair' }}
       ></canvas>
     </div>
