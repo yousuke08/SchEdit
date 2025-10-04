@@ -177,12 +177,15 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         }
       } else {
         // Finish drawing wire
-        addWire({
-          start: drawingWire,
-          end: snappedPos,
-          color: wireColor,
-          thickness: wireThickness
-        })
+        // Check if start and end points are different
+        if (drawingWire.x !== snappedPos.x || drawingWire.y !== snappedPos.y) {
+          addWire({
+            start: drawingWire,
+            end: snappedPos,
+            color: wireColor,
+            thickness: wireThickness
+          })
+        }
         setDrawingWire(null)
         setCurrentMousePos(null)
       }
