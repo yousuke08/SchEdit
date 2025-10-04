@@ -366,7 +366,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedWireId, selectedComponentId, drawingWire])
+  }, [selectedWireId, selectedComponentId, drawingWire, components])
 
   const handleWheel = (e) => {
     e.preventDefault()
