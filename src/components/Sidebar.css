@@ -1,0 +1,27 @@
+.sidebar {
+  width: 250px;
+  background-color: #1e1e1e;
+  border-right: 1px solid #444;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sidebar-right {
+  border-right: none;
+  border-left: 1px solid #444;
+}
+
+.sidebar h3 {
+  margin: 0;
+  padding: 15px;
+  background-color: #2a2a2a;
+  border-bottom: 1px solid #444;
+  color: #fff;
+  font-size: 16px;
+}
+
+.sidebar-content {
+  padding: 15px;
+  color: #ccc;
+}

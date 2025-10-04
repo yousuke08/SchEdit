@@ -1,0 +1,13 @@
+.canvas-container {
+  flex: 1;
+  background-color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.canvas-container canvas {
+  display: block;
+  cursor: crosshair;
+}

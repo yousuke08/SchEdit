@@ -1,0 +1,42 @@
+.toolbar {
+  display: flex;
+  gap: 20px;
+  padding: 10px;
+  background-color: #2a2a2a;
+  border-bottom: 1px solid #444;
+  align-items: center;
+}
+
+.toolbar-section {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.toolbar button {
+  padding: 6px 12px;
+  background-color: #3a3a3a;
+  border: 1px solid #555;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.toolbar button:hover {
+  background-color: #4a4a4a;
+}
+
+.toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.zoom-level {
+  color: #fff;
+  font-size: 14px;
+  min-width: 45px;
+  text-align: center;
+}
