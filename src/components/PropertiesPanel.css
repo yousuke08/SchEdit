@@ -1,0 +1,67 @@
+.properties-panel {
+  padding: 15px;
+  color: #ccc;
+}
+
+.property-group {
+  margin-bottom: 20px;
+}
+
+.property-group h4 {
+  margin: 0 0 10px 0;
+  color: #fff;
+  font-size: 14px;
+}
+
+.property-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.property-item label {
+  min-width: 50px;
+  font-size: 13px;
+}
+
+.property-item input[type="color"] {
+  width: 60px;
+  height: 30px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+  background: transparent;
+}
+
+.property-item input[type="range"] {
+  flex: 1;
+}
+
+.property-item span {
+  min-width: 40px;
+  font-size: 13px;
+  text-align: right;
+}
+
+.property-info {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #444;
+}
+
+.property-info p {
+  margin: 5px 0;
+  font-size: 12px;
+  color: #888;
+}
+
+.hint {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #2a2a2a;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #888;
+  font-style: italic;
+}

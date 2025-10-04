@@ -3,6 +3,7 @@ import './App.css'
 import Toolbar from './components/Toolbar'
 import Sidebar from './components/Sidebar'
 import Canvas from './components/Canvas'
+import PropertiesPanel from './components/PropertiesPanel'
 
 function App() {
   const [showGrid, setShowGrid] = useState(true)
@@ -21,7 +22,7 @@ function App() {
         </Sidebar>
         <Canvas ref={canvasRef} showGrid={showGrid} />
         <Sidebar position="right" title="プロパティ">
-          <p>選択なし</p>
+          <PropertiesPanel />
         </Sidebar>
       </div>
     </div>

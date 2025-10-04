@@ -1,6 +1,8 @@
 import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react'
 import './Canvas.css'
-import { GRID_SIZE } from '../utils/grid'
+import { GRID_SIZE, snapToGrid, screenToWorld } from '../utils/grid'
+import useSchematicStore from '../store/schematicStore'
+import { distanceToLineSegment } from '../utils/geometry'
 
 const Canvas = forwardRef(({ showGrid }, ref) => {
   const canvasRef = useRef(null)
@@ -8,6 +10,10 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
   const [zoom, setZoom] = useState(1.0)
   const [isPanning, setIsPanning] = useState(false)
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 })
+  const [drawingWire, setDrawingWire] = useState(null)
+  const [currentMousePos, setCurrentMousePos] = useState(null)
+
+  const { wires, addWire, selectedWireId, setSelectedWire, removeWire, wireColor, wireThickness } = useSchematicStore()
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -82,14 +88,104 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       }
     }
 
+    // Draw wires
+    wires.forEach(wire => {
+      ctx.strokeStyle = wire.id === selectedWireId ? '#ffff00' : wire.color
+      ctx.lineWidth = wire.thickness / zoom
+      ctx.lineCap = 'round'
+
+      ctx.beginPath()
+      ctx.moveTo(wire.start.x, wire.start.y)
+      ctx.lineTo(wire.end.x, wire.end.y)
+      ctx.stroke()
+
+      // Draw endpoints
+      if (wire.id === selectedWireId) {
+        ctx.fillStyle = '#ffff00'
+        const pointRadius = 4 / zoom
+        ctx.beginPath()
+        ctx.arc(wire.start.x, wire.start.y, pointRadius, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.beginPath()
+        ctx.arc(wire.end.x, wire.end.y, pointRadius, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    })
+
+    // Draw wire being drawn
+    if (drawingWire && currentMousePos) {
+      const canvas = canvasRef.current
+      const rect = canvas.getBoundingClientRect()
+      const worldPos = screenToWorld({
+        x: currentMousePos.x - rect.left,
+        y: currentMousePos.y - rect.top
+      }, pan, zoom)
+      const snappedPos = { x: snapToGrid(worldPos.x), y: snapToGrid(worldPos.y) }
+
+      ctx.strokeStyle = wireColor
+      ctx.lineWidth = wireThickness / zoom
+      ctx.lineCap = 'round'
+      ctx.setLineDash([5 / zoom, 5 / zoom])
+
+      ctx.beginPath()
+      ctx.moveTo(drawingWire.x, drawingWire.y)
+      ctx.lineTo(snappedPos.x, snappedPos.y)
+      ctx.stroke()
+
+      ctx.setLineDash([])
+    }
+
     ctx.restore()
-  }, [showGrid, zoom, pan])
+  }, [showGrid, zoom, pan, wires, selectedWireId, drawingWire, currentMousePos, wireColor, wireThickness])
 
   const handleMouseDown = (e) => {
     if (e.button === 1 || (e.button === 0 && e.shiftKey)) { // Middle button or Shift+Left
       setIsPanning(true)
       setLastMousePos({ x: e.clientX, y: e.clientY })
       e.preventDefault()
+      return
+    }
+
+    if (e.button === 0 && !e.shiftKey) { // Left click for wire drawing
+      const canvas = canvasRef.current
+      const rect = canvas.getBoundingClientRect()
+      const worldPos = screenToWorld({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      }, pan, zoom)
+      const snappedPos = { x: snapToGrid(worldPos.x), y: snapToGrid(worldPos.y) }
+
+      if (!drawingWire) {
+        // Check if clicking on existing wire
+        const clickThreshold = 10 / zoom
+        let clickedWire = null
+        for (const wire of wires) {
+          const distance = distanceToLineSegment(worldPos, wire.start, wire.end)
+          if (distance < clickThreshold) {
+            clickedWire = wire
+            break
+          }
+        }
+
+        if (clickedWire) {
+          // Select wire
+          setSelectedWire(clickedWire.id)
+        } else {
+          // Start drawing wire
+          setSelectedWire(null)
+          setDrawingWire(snappedPos)
+        }
+      } else {
+        // Finish drawing wire
+        addWire({
+          start: drawingWire,
+          end: snappedPos,
+          color: wireColor,
+          thickness: wireThickness
+        })
+        setDrawingWire(null)
+        setCurrentMousePos(null)
+      }
     }
   }
 
@@ -100,11 +196,30 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }))
       setLastMousePos({ x: e.clientX, y: e.clientY })
     }
+
+    if (drawingWire) {
+      setCurrentMousePos({ x: e.clientX, y: e.clientY })
+    }
   }
 
   const handleMouseUp = () => {
     setIsPanning(false)
   }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      setDrawingWire(null)
+      setCurrentMousePos(null)
+      setSelectedWire(null)
+    } else if (e.key === 'Delete' && selectedWireId) {
+      removeWire(selectedWireId)
+    }
+  }
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedWireId, drawingWire])
 
   const handleWheel = (e) => {
     e.preventDefault()
