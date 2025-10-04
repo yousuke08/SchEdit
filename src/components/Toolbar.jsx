@@ -1,12 +1,30 @@
+import { useState, useEffect } from 'react'
 import './Toolbar.css'
 
-function Toolbar({ showGrid, setShowGrid, zoom, setZoom }) {
+function Toolbar({ showGrid, setShowGrid, canvasRef }) {
+  const [zoom, setZoom] = useState(100)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (canvasRef.current) {
+        const currentZoom = canvasRef.current.getZoom()
+        setZoom(Math.round(currentZoom * 100))
+      }
+    }, 100)
+
+    return () => clearInterval(interval)
+  }, [canvasRef])
+
   const handleZoomIn = () => {
-    setZoom(prev => Math.min(prev + 0.1, 3.0))
+    if (canvasRef.current) {
+      canvasRef.current.zoomIn()
+    }
   }
 
   const handleZoomOut = () => {
-    setZoom(prev => Math.max(prev - 0.1, 0.1))
+    if (canvasRef.current) {
+      canvasRef.current.zoomOut()
+    }
   }
 
   return (
@@ -32,7 +50,7 @@ function Toolbar({ showGrid, setShowGrid, zoom, setZoom }) {
         </label>
         <button onClick={handleZoomIn} title="ズームイン">+</button>
         <button onClick={handleZoomOut} title="ズームアウト">-</button>
-        <span className="zoom-level">{Math.round(zoom * 100)}%</span>
+        <span className="zoom-level">{zoom}%</span>
       </div>
     </div>
   )
