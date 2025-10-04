@@ -156,24 +156,37 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       const snappedPos = { x: snapToGrid(worldPos.x), y: snapToGrid(worldPos.y) }
 
       if (!drawingWire) {
-        // Check if clicking on existing wire
-        const clickThreshold = 10 / zoom
-        let clickedWire = null
-        for (const wire of wires) {
-          const distance = distanceToLineSegment(worldPos, wire.start, wire.end)
-          if (distance < clickThreshold) {
-            clickedWire = wire
-            break
-          }
-        }
+        // Check if clicking near a grid point (snapped position)
+        const gridThreshold = GRID_SIZE / 5
+        const distToGrid = Math.sqrt(
+          Math.pow(worldPos.x - snappedPos.x, 2) +
+          Math.pow(worldPos.y - snappedPos.y, 2)
+        )
 
-        if (clickedWire) {
-          // Select wire
-          setSelectedWire(clickedWire.id)
-        } else {
-          // Start drawing wire
+        if (distToGrid < gridThreshold) {
+          // Clicking on/near a grid point - start drawing wire
           setSelectedWire(null)
           setDrawingWire(snappedPos)
+        } else {
+          // Check if clicking on wire line
+          const clickThreshold = 10 / zoom
+          let clickedWire = null
+          for (const wire of wires) {
+            const distance = distanceToLineSegment(worldPos, wire.start, wire.end)
+            if (distance < clickThreshold) {
+              clickedWire = wire
+              break
+            }
+          }
+
+          if (clickedWire) {
+            // Select wire
+            setSelectedWire(clickedWire.id)
+          } else {
+            // Start drawing wire
+            setSelectedWire(null)
+            setDrawingWire(snappedPos)
+          }
         }
       } else {
         // Finish drawing wire
