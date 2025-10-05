@@ -1,14 +1,37 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import './App.css'
 import Toolbar from './components/Toolbar'
 import Sidebar from './components/Sidebar'
 import Canvas from './components/Canvas'
 import PropertiesPanel from './components/PropertiesPanel'
 import ComponentPalette from './components/ComponentPalette'
+import useSchematicStore from './store/schematicStore'
+import { saveToLocalStorage, loadFromLocalStorage } from './utils/fileOperations'
 
 function App() {
   const [showGrid, setShowGrid] = useState(true)
   const canvasRef = useRef(null)
+  const { wires, components } = useSchematicStore()
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const saved = loadFromLocalStorage()
+    if (saved && saved.wires && saved.components) {
+      useSchematicStore.setState({
+        wires: saved.wires,
+        components: saved.components
+      })
+    }
+  }, [])
+
+  // Auto-save to localStorage
+  useEffect(() => {
+    const timer = setInterval(() => {
+      saveToLocalStorage(wires, components)
+    }, 30000) // Save every 30 seconds
+
+    return () => clearInterval(timer)
+  }, [wires, components])
 
   return (
     <div className="app">

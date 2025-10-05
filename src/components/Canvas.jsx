@@ -39,6 +39,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     setZoom: (newZoom) => setZoom(Math.max(0.1, Math.min(3.0, newZoom))),
     zoomIn: () => setZoom(prev => Math.min(prev + 0.1, 3.0)),
     zoomOut: () => setZoom(prev => Math.max(prev - 0.1, 0.1)),
+    getCanvas: () => canvasRef.current,
     zoomToPoint: (clientX, clientY, delta) => {
       const canvas = canvasRef.current
       if (!canvas) return

@@ -1,8 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './Toolbar.css'
+import useSchematicStore from '../store/schematicStore'
+import { saveProjectToJSON, loadProjectFromJSON, exportToSVG, exportToPNG } from '../utils/fileOperations'
+import { getComponentByType } from './componentLibrary'
 
 function Toolbar({ showGrid, setShowGrid, canvasRef }) {
   const [zoom, setZoom] = useState(100)
+  const fileInputRef = useRef(null)
+  const { wires, components, addWire, addComponent } = useSchematicStore()
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -27,13 +32,68 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
     }
   }
 
+  const handleNew = () => {
+    if (confirm('新規プロジェクトを作成しますか？現在の内容は失われます。')) {
+      window.location.reload()
+    }
+  }
+
+  const handleSave = () => {
+    saveProjectToJSON(wires, components)
+  }
+
+  const handleLoad = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      loadProjectFromJSON(file, (project) => {
+        // Clear current project
+        useSchematicStore.setState({ wires: [], components: [] })
+
+        // Load wires
+        project.wires.forEach(wire => {
+          addWire(wire)
+        })
+
+        // Load components
+        project.components.forEach(comp => {
+          addComponent(comp)
+        })
+      })
+    }
+    // Reset input
+    e.target.value = ''
+  }
+
+  const handleExport = () => {
+    const choice = prompt('エクスポート形式を選択してください:\n1: SVG\n2: PNG', '1')
+    if (choice === '1') {
+      exportToSVG(wires, components, getComponentByType)
+    } else if (choice === '2' && canvasRef.current) {
+      const canvas = canvasRef.current.getCanvas?.()
+      if (canvas) {
+        exportToPNG(canvas)
+      }
+    }
+  }
+
   return (
     <div className="toolbar">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
       <div className="toolbar-section">
-        <button title="新規">新規</button>
-        <button title="保存">保存</button>
-        <button title="読込">読込</button>
-        <button title="エクスポート">エクスポート</button>
+        <button onClick={handleNew} title="新規">新規</button>
+        <button onClick={handleSave} title="保存">保存</button>
+        <button onClick={handleLoad} title="読込">読込</button>
+        <button onClick={handleExport} title="エクスポート">エクスポート</button>
       </div>
       <div className="toolbar-section">
         <button title="元に戻す (Ctrl+Z)">Undo</button>
