@@ -5,7 +5,7 @@ const useSchematicStore = create((set) => ({
   components: [],
   selectedWireId: null,
   selectedComponentId: null,
-  wireColor: '#00ff00',
+  wireColor: '#ffffff',
   wireThickness: 2,
 
   addWire: (wire) => set((state) => ({

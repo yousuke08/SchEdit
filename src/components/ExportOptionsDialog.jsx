@@ -4,10 +4,10 @@ import './ExportOptionsDialog.css'
 function ExportOptionsDialog({ isOpen, onClose, onExport, exportType }) {
   const [options, setOptions] = useState({
     useWireColor: false,
-    wireColor: '#00ff00',
-    invertColors: false,
-    backgroundColor: '#1a1a1a',
-    transparentBackground: false,
+    wireColor: '#000000',
+    invertColors: true,
+    backgroundColor: '#ffffff',
+    transparentBackground: true,
     showGrid: false
   })
 
