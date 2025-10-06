@@ -216,6 +216,11 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
 
       // Selection mode
       if (editorMode === 'select') {
+        // Don't process click if already dragging selection box
+        if (selectionBox) {
+          return
+        }
+
         // Check if clicking on selected items for dragging
         let clickedSelected = false
 
