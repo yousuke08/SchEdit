@@ -24,13 +24,11 @@ function App() {
     }
   }, [])
 
-  // Auto-save to localStorage
+  // Auto-save to localStorage on changes
   useEffect(() => {
-    const timer = setInterval(() => {
+    if (wires.length > 0 || components.length > 0) {
       saveToLocalStorage(wires, components)
-    }, 30000) // Save every 30 seconds
-
-    return () => clearInterval(timer)
+    }
   }, [wires, components])
 
   return (
