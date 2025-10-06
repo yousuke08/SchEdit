@@ -1,4 +1,4 @@
-// Helper function to invert color (white <-> black)
+// Helper function to invert color (only white <-> black, other colors unchanged)
 function invertColor(color) {
   // Convert hex color to RGB
   const hex = color.replace('#', '')
@@ -6,12 +6,19 @@ function invertColor(color) {
   const g = parseInt(hex.substr(2, 2), 16)
   const b = parseInt(hex.substr(4, 2), 16)
 
-  // Invert RGB values
-  const invR = (255 - r).toString(16).padStart(2, '0')
-  const invG = (255 - g).toString(16).padStart(2, '0')
-  const invB = (255 - b).toString(16).padStart(2, '0')
+  // Check if the color is grayscale (white/black/gray)
+  // If R, G, B are all equal or very close, it's a grayscale color
+  const isGrayscale = Math.abs(r - g) < 10 && Math.abs(g - b) < 10 && Math.abs(r - b) < 10
 
-  return `#${invR}${invG}${invB}`
+  if (isGrayscale) {
+    // Invert grayscale colors (white <-> black)
+    const invValue = 255 - r
+    const invHex = invValue.toString(16).padStart(2, '0')
+    return `#${invHex}${invHex}${invHex}`
+  }
+
+  // Return original color for non-grayscale colors
+  return color
 }
 
 // Save project to JSON file

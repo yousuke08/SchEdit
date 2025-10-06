@@ -1,15 +1,22 @@
-// Helper function to invert color
+// Helper function to invert color (only white <-> black, other colors unchanged)
 function invertColorSVG(color) {
   const hex = color.replace('#', '')
   const r = parseInt(hex.substr(0, 2), 16)
   const g = parseInt(hex.substr(2, 2), 16)
   const b = parseInt(hex.substr(4, 2), 16)
 
-  const invR = (255 - r).toString(16).padStart(2, '0')
-  const invG = (255 - g).toString(16).padStart(2, '0')
-  const invB = (255 - b).toString(16).padStart(2, '0')
+  // Check if the color is grayscale (white/black/gray)
+  const isGrayscale = Math.abs(r - g) < 10 && Math.abs(g - b) < 10 && Math.abs(r - b) < 10
 
-  return `#${invR}${invG}${invB}`
+  if (isGrayscale) {
+    // Invert grayscale colors (white <-> black)
+    const invValue = 255 - r
+    const invHex = invValue.toString(16).padStart(2, '0')
+    return `#${invHex}${invHex}${invHex}`
+  }
+
+  // Return original color for non-grayscale colors
+  return color
 }
 
 // Convert Canvas drawing commands to SVG paths
