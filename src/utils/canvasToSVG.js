@@ -1,11 +1,12 @@
 // Convert Canvas drawing commands to SVG paths
 export class CanvasToSVGConverter {
-  constructor() {
+  constructor(colorOverride = null) {
     this.paths = []
     this.currentPath = []
     this.strokeStyle = '#ffffff'
     this.fillStyle = '#ffffff'
     this.lineWidth = 2
+    this.colorOverride = colorOverride
   }
 
   // Mock Canvas context methods
@@ -51,7 +52,7 @@ export class CanvasToSVGConverter {
       this.paths.push({
         type: 'stroke',
         path: pathData,
-        stroke: this.strokeStyle,
+        stroke: this.colorOverride || this.strokeStyle,
         strokeWidth: this.lineWidth,
         fill: 'none'
       })
@@ -64,7 +65,7 @@ export class CanvasToSVGConverter {
       this.paths.push({
         type: 'fill',
         path: pathData,
-        fill: this.fillStyle,
+        fill: this.colorOverride || this.fillStyle,
         stroke: 'none'
       })
     }
@@ -85,8 +86,8 @@ export class CanvasToSVGConverter {
   }
 }
 
-export function componentToSVG(componentDef, selected = false) {
-  const converter = new CanvasToSVGConverter()
+export function componentToSVG(componentDef, selected = false, colorOverride = null) {
+  const converter = new CanvasToSVGConverter(colorOverride)
   componentDef.render(converter, selected)
   return converter.getSVGPaths()
 }

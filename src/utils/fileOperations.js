@@ -46,6 +46,7 @@ export function exportToSVG(wires, components, getComponentByType, options = {})
   const {
     wireColor = null,
     backgroundColor = '#1a1a1a',
+    transparentBackground = false,
     showGrid = false
   } = options
 
@@ -80,7 +81,7 @@ export function exportToSVG(wires, components, getComponentByType, options = {})
 
     let svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-  <rect width="100%" height="100%" fill="${backgroundColor}"/>
+${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroundColor}"/>` : ''}
   <g transform="translate(${offsetX}, ${offsetY})">
 `
 
@@ -109,7 +110,7 @@ export function exportToSVG(wires, components, getComponentByType, options = {})
     components.forEach(comp => {
       const def = getComponentByType(comp.type)
       if (def) {
-        const svgPaths = componentToSVG(def, false)
+        const svgPaths = componentToSVG(def, false, wireColor)
         svg += `    <g transform="translate(${comp.x}, ${comp.y}) rotate(${(comp.rotation || 0) * 180 / Math.PI})">\n`
         svg += `      ${svgPaths}\n`
         svg += `    </g>\n`
@@ -134,12 +135,13 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
   const {
     wireColor = null,
     backgroundColor = '#1a1a1a',
+    transparentBackground = false,
     showGrid = false
   } = options
 
   // Create a temporary canvas for export
   const tempCanvas = document.createElement('canvas')
-  const ctx = tempCanvas.getContext('2d')
+  const ctx = tempCanvas.getContext('2d', { alpha: true })
 
   // Calculate bounds
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
@@ -172,8 +174,10 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
   tempCanvas.height = height
 
   // Draw background
-  ctx.fillStyle = backgroundColor
-  ctx.fillRect(0, 0, width, height)
+  if (!transparentBackground) {
+    ctx.fillStyle = backgroundColor
+    ctx.fillRect(0, 0, width, height)
+  }
 
   ctx.save()
   ctx.translate(offsetX, offsetY)
@@ -217,7 +221,31 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
       ctx.save()
       ctx.translate(comp.x, comp.y)
       ctx.rotate(comp.rotation || 0)
-      def.render(ctx, false)
+
+      // Override colors if wireColor is specified
+      if (wireColor) {
+        // Create a proxy context that intercepts strokeStyle and fillStyle
+        const proxyCtx = new Proxy(ctx, {
+          get(target, prop) {
+            if (prop === 'strokeStyle' || prop === 'fillStyle') {
+              return wireColor
+            }
+            return target[prop]
+          },
+          set(target, prop, value) {
+            if (prop === 'strokeStyle' || prop === 'fillStyle') {
+              target[prop] = wireColor
+              return true
+            }
+            target[prop] = value
+            return true
+          }
+        })
+        def.render(proxyCtx, false)
+      } else {
+        def.render(ctx, false)
+      }
+
       ctx.restore()
     }
   })

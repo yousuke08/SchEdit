@@ -5,6 +5,7 @@ function ExportOptionsDialog({ isOpen, onClose, onExport, exportType }) {
   const [options, setOptions] = useState({
     wireColor: '#00ff00',
     backgroundColor: '#1a1a1a',
+    transparentBackground: false,
     showGrid: false
   })
 
@@ -36,8 +37,20 @@ function ExportOptionsDialog({ isOpen, onClose, onExport, exportType }) {
             type="color"
             value={options.backgroundColor}
             onChange={(e) => setOptions({ ...options, backgroundColor: e.target.value })}
+            disabled={options.transparentBackground}
           />
           <span>{options.backgroundColor}</span>
+        </div>
+
+        <div className="dialog-option">
+          <label>
+            <input
+              type="checkbox"
+              checked={options.transparentBackground}
+              onChange={(e) => setOptions({ ...options, transparentBackground: e.target.checked })}
+            />
+            背景を透明に
+          </label>
         </div>
 
         <div className="dialog-option">
