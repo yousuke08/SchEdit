@@ -6,7 +6,9 @@ import { getComponentByType } from './componentLibrary'
 
 function Toolbar({ showGrid, setShowGrid, canvasRef }) {
   const [zoom, setZoom] = useState(100)
+  const [showExportMenu, setShowExportMenu] = useState(false)
   const fileInputRef = useRef(null)
+  const exportMenuRef = useRef(null)
   const { wires, components, addWire, addComponent } = useSchematicStore()
 
   useEffect(() => {
@@ -69,16 +71,40 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
   }
 
   const handleExport = () => {
-    const choice = prompt('エクスポート形式を選択してください:\n1: SVG\n2: PNG', '1')
-    if (choice === '1') {
-      exportToSVG(wires, components, getComponentByType)
-    } else if (choice === '2' && canvasRef.current) {
+    setShowExportMenu(!showExportMenu)
+  }
+
+  const handleExportSVG = () => {
+    exportToSVG(wires, components, getComponentByType)
+    setShowExportMenu(false)
+  }
+
+  const handleExportPNG = () => {
+    if (canvasRef.current) {
       const canvas = canvasRef.current.getCanvas?.()
       if (canvas) {
         exportToPNG(canvas)
       }
     }
+    setShowExportMenu(false)
   }
+
+  // Close export menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
+        setShowExportMenu(false)
+      }
+    }
+
+    if (showExportMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showExportMenu])
 
   return (
     <div className="toolbar">
@@ -93,7 +119,15 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
         <button onClick={handleNew} title="新規">新規</button>
         <button onClick={handleSave} title="保存">保存</button>
         <button onClick={handleLoad} title="読込">読込</button>
-        <button onClick={handleExport} title="エクスポート">エクスポート</button>
+        <div className="export-dropdown" ref={exportMenuRef}>
+          <button onClick={handleExport} title="エクスポート">エクスポート</button>
+          {showExportMenu && (
+            <div className="export-menu">
+              <button onClick={handleExportSVG}>SVG形式</button>
+              <button onClick={handleExportPNG}>PNG形式</button>
+            </div>
+          )}
+        </div>
       </div>
       <div className="toolbar-section">
         <button title="元に戻す (Ctrl+Z)">Undo</button>
