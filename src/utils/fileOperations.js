@@ -43,64 +43,67 @@ export function loadProjectFromJSON(file, onLoad) {
 
 // Export to SVG
 export function exportToSVG(wires, components, getComponentByType) {
-  // Calculate bounds
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  // Dynamic import for canvas to SVG converter
+  import('./canvasToSVG.js').then(({ componentToSVG }) => {
+    // Calculate bounds
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
 
-  wires.forEach(wire => {
-    minX = Math.min(minX, wire.start.x, wire.end.x)
-    minY = Math.min(minY, wire.start.y, wire.end.y)
-    maxX = Math.max(maxX, wire.start.x, wire.end.x)
-    maxY = Math.max(maxY, wire.start.y, wire.end.y)
-  })
+    wires.forEach(wire => {
+      minX = Math.min(minX, wire.start.x, wire.end.x)
+      minY = Math.min(minY, wire.start.y, wire.end.y)
+      maxX = Math.max(maxX, wire.start.x, wire.end.x)
+      maxY = Math.max(maxY, wire.start.y, wire.end.y)
+    })
 
-  components.forEach(comp => {
-    const def = getComponentByType(comp.type)
-    if (def) {
-      minX = Math.min(minX, comp.x - def.width / 2)
-      minY = Math.min(minY, comp.y - def.height / 2)
-      maxX = Math.max(maxX, comp.x + def.width / 2)
-      maxY = Math.max(maxY, comp.y + def.height / 2)
-    }
-  })
+    components.forEach(comp => {
+      const def = getComponentByType(comp.type)
+      if (def) {
+        minX = Math.min(minX, comp.x - def.width / 2)
+        minY = Math.min(minY, comp.y - def.height / 2)
+        maxX = Math.max(maxX, comp.x + def.width / 2)
+        maxY = Math.max(maxY, comp.y + def.height / 2)
+      }
+    })
 
-  const padding = 50
-  const width = maxX - minX + padding * 2
-  const height = maxY - minY + padding * 2
-  const offsetX = -minX + padding
-  const offsetY = -minY + padding
+    const padding = 50
+    const width = maxX - minX + padding * 2
+    const height = maxY - minY + padding * 2
+    const offsetX = -minX + padding
+    const offsetY = -minY + padding
 
-  let svg = `<?xml version="1.0" encoding="UTF-8"?>
+    let svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
   <rect width="100%" height="100%" fill="#1a1a1a"/>
   <g transform="translate(${offsetX}, ${offsetY})">
 `
 
-  // Draw wires
-  wires.forEach(wire => {
-    svg += `    <line x1="${wire.start.x}" y1="${wire.start.y}" x2="${wire.end.x}" y2="${wire.end.y}" stroke="${wire.color}" stroke-width="${wire.thickness}" stroke-linecap="round"/>\n`
-  })
+    // Draw wires
+    wires.forEach(wire => {
+      svg += `    <line x1="${wire.start.x}" y1="${wire.start.y}" x2="${wire.end.x}" y2="${wire.end.y}" stroke="${wire.color}" stroke-width="${wire.thickness}" stroke-linecap="round"/>\n`
+    })
 
-  // Draw components (simplified - just bounding boxes for now)
-  components.forEach(comp => {
-    const def = getComponentByType(comp.type)
-    if (def) {
-      svg += `    <g transform="translate(${comp.x}, ${comp.y}) rotate(${(comp.rotation || 0) * 180 / Math.PI})">\n`
-      svg += `      <rect x="${-def.width/2}" y="${-def.height/2}" width="${def.width}" height="${def.height}" fill="none" stroke="#ffffff" stroke-width="2"/>\n`
-      svg += `      <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-size="12">${def.name}</text>\n`
-      svg += `    </g>\n`
-    }
-  })
+    // Draw components with actual symbols
+    components.forEach(comp => {
+      const def = getComponentByType(comp.type)
+      if (def) {
+        const svgPaths = componentToSVG(def, false)
+        svg += `    <g transform="translate(${comp.x}, ${comp.y}) rotate(${(comp.rotation || 0) * 180 / Math.PI})">\n`
+        svg += `      ${svgPaths}\n`
+        svg += `    </g>\n`
+      }
+    })
 
-  svg += `  </g>
+    svg += `  </g>
 </svg>`
 
-  const blob = new Blob([svg], { type: 'image/svg+xml' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `schematic_${new Date().toISOString().slice(0, 10)}.svg`
-  link.click()
-  URL.revokeObjectURL(url)
+    const blob = new Blob([svg], { type: 'image/svg+xml' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `schematic_${new Date().toISOString().slice(0, 10)}.svg`
+    link.click()
+    URL.revokeObjectURL(url)
+  })
 }
 
 // Export to PNG
