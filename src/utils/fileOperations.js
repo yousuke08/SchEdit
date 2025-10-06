@@ -52,6 +52,12 @@ export function exportToSVG(wires, components, getComponentByType, options = {})
 
   // Dynamic import for canvas to SVG converter
   import('./canvasToSVG.js').then(({ componentToSVG }) => {
+    // Check if there's anything to export
+    if (wires.length === 0 && components.length === 0) {
+      alert('エクスポートする内容がありません。')
+      return
+    }
+
     // Calculate bounds
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
 
@@ -71,6 +77,14 @@ export function exportToSVG(wires, components, getComponentByType, options = {})
         maxY = Math.max(maxY, comp.y + def.height / 2)
       }
     })
+
+    // If bounds are still infinite, set default values
+    if (!isFinite(minX)) {
+      minX = 0
+      maxX = 100
+      minY = 0
+      maxY = 100
+    }
 
     const padding = 50
     const gridSize = 20
@@ -132,6 +146,8 @@ ${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroun
 
 // Export to PNG
 export function exportToPNG(wires, components, getComponentByType, canvasRef, options = {}) {
+  console.log('exportToPNG called with:', { wires, components, options })
+
   const {
     wireColor = null,
     backgroundColor = '#1a1a1a',
@@ -142,6 +158,15 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
   // Create a temporary canvas for export
   const tempCanvas = document.createElement('canvas')
   const ctx = tempCanvas.getContext('2d', { alpha: true })
+
+  console.log('tempCanvas created:', tempCanvas)
+
+  // Check if there's anything to export
+  if (wires.length === 0 && components.length === 0) {
+    console.error('Nothing to export')
+    alert('エクスポートする内容がありません。')
+    return
+  }
 
   // Calculate bounds
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
@@ -163,12 +188,22 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
     }
   })
 
+  // If bounds are still infinite, set default values
+  if (!isFinite(minX)) {
+    minX = 0
+    maxX = 100
+    minY = 0
+    maxY = 100
+  }
+
   const padding = 50
   const gridSize = 20
   const width = maxX - minX + padding * 2
   const height = maxY - minY + padding * 2
   const offsetX = -minX + padding
   const offsetY = -minY + padding
+
+  console.log('Canvas dimensions:', { width, height, minX, minY, maxX, maxY })
 
   tempCanvas.width = width
   tempCanvas.height = height
@@ -252,14 +287,23 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
 
   ctx.restore()
 
+  console.log('Drawing complete, converting to blob...')
+
   // Export
   tempCanvas.toBlob((blob) => {
+    console.log('Blob created:', blob)
+    if (!blob) {
+      console.error('Failed to create blob')
+      alert('PNG生成に失敗しました。')
+      return
+    }
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
     link.download = `schematic_${new Date().toISOString().slice(0, 10)}.png`
     link.click()
     URL.revokeObjectURL(url)
+    console.log('PNG export completed')
   })
 }
 
