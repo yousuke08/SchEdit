@@ -17,6 +17,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
   const [draggingComponent, setDraggingComponent] = useState(null)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [selectionBox, setSelectionBox] = useState(null)
+  const [isMouseDownInSelectMode, setIsMouseDownInSelectMode] = useState(false)
   const [draggingSelection, setDraggingSelection] = useState(false)
   const [selectionDragStart, setSelectionDragStart] = useState(null)
 
@@ -216,10 +217,12 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
 
       // Selection mode
       if (editorMode === 'select') {
-        // Don't process click if already dragging selection box
-        if (selectionBox) {
+        // Don't process if already in a selection operation
+        if (isMouseDownInSelectMode) {
           return
         }
+
+        setIsMouseDownInSelectMode(true)
 
         // Check if clicking on selected items for dragging
         let clickedSelected = false
@@ -438,6 +441,11 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       setMultipleSelection(selectedWires, selectedComps)
       setSelectionBox(null)
     }
+
+    // Reset flag after state updates
+    setTimeout(() => {
+      setIsMouseDownInSelectMode(false)
+    }, 0)
   }
 
   const handleKeyDown = (e) => {
@@ -446,6 +454,8 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       setCurrentMousePos(null)
       setSelectedWire(null)
       setSelectedComponent(null)
+      setSelectionBox(null)
+      clearSelection()
     } else if (e.key === 'Delete') {
       if (selectedWireId) {
         removeWire(selectedWireId)
@@ -527,6 +537,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         ref={canvasRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
         onWheel={handleWheel}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
