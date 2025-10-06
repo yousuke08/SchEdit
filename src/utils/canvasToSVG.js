@@ -1,12 +1,27 @@
+// Helper function to invert color
+function invertColorSVG(color) {
+  const hex = color.replace('#', '')
+  const r = parseInt(hex.substr(0, 2), 16)
+  const g = parseInt(hex.substr(2, 2), 16)
+  const b = parseInt(hex.substr(4, 2), 16)
+
+  const invR = (255 - r).toString(16).padStart(2, '0')
+  const invG = (255 - g).toString(16).padStart(2, '0')
+  const invB = (255 - b).toString(16).padStart(2, '0')
+
+  return `#${invR}${invG}${invB}`
+}
+
 // Convert Canvas drawing commands to SVG paths
 export class CanvasToSVGConverter {
-  constructor(colorOverride = null) {
+  constructor(colorOverride = null, invertColors = false) {
     this.paths = []
     this.currentPath = []
     this.strokeStyle = '#ffffff'
     this.fillStyle = '#ffffff'
     this.lineWidth = 2
     this.colorOverride = colorOverride
+    this.invertColors = invertColors
   }
 
   // Mock Canvas context methods
@@ -49,10 +64,16 @@ export class CanvasToSVGConverter {
   stroke() {
     if (this.currentPath.length > 0) {
       const pathData = this.currentPath.join(' ')
+      let strokeColor = this.colorOverride || this.strokeStyle
+      if (strokeColor === 'invert') {
+        strokeColor = invertColorSVG(this.strokeStyle)
+      } else if (this.invertColors && !this.colorOverride) {
+        strokeColor = invertColorSVG(this.strokeStyle)
+      }
       this.paths.push({
         type: 'stroke',
         path: pathData,
-        stroke: this.colorOverride || this.strokeStyle,
+        stroke: strokeColor,
         strokeWidth: this.lineWidth,
         fill: 'none'
       })
@@ -62,10 +83,16 @@ export class CanvasToSVGConverter {
   fill() {
     if (this.currentPath.length > 0) {
       const pathData = this.currentPath.join(' ')
+      let fillColor = this.colorOverride || this.fillStyle
+      if (fillColor === 'invert') {
+        fillColor = invertColorSVG(this.fillStyle)
+      } else if (this.invertColors && !this.colorOverride) {
+        fillColor = invertColorSVG(this.fillStyle)
+      }
       this.paths.push({
         type: 'fill',
         path: pathData,
-        fill: this.colorOverride || this.fillStyle,
+        fill: fillColor,
         stroke: 'none'
       })
     }
@@ -86,8 +113,8 @@ export class CanvasToSVGConverter {
   }
 }
 
-export function componentToSVG(componentDef, selected = false, colorOverride = null) {
-  const converter = new CanvasToSVGConverter(colorOverride)
+export function componentToSVG(componentDef, selected = false, colorOverride = null, invertColors = false) {
+  const converter = new CanvasToSVGConverter(colorOverride, invertColors)
   componentDef.render(converter, selected)
   return converter.getSVGPaths()
 }

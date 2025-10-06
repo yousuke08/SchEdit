@@ -1,3 +1,19 @@
+// Helper function to invert color (white <-> black)
+function invertColor(color) {
+  // Convert hex color to RGB
+  const hex = color.replace('#', '')
+  const r = parseInt(hex.substr(0, 2), 16)
+  const g = parseInt(hex.substr(2, 2), 16)
+  const b = parseInt(hex.substr(4, 2), 16)
+
+  // Invert RGB values
+  const invR = (255 - r).toString(16).padStart(2, '0')
+  const invG = (255 - g).toString(16).padStart(2, '0')
+  const invB = (255 - b).toString(16).padStart(2, '0')
+
+  return `#${invR}${invG}${invB}`
+}
+
 // Save project to JSON file
 export function saveProjectToJSON(wires, components) {
   const project = {
@@ -46,6 +62,7 @@ export function exportToSVG(wires, components, getComponentByType, options = {})
   const {
     useWireColor = false,
     wireColor = null,
+    invertColors = false,
     backgroundColor = '#1a1a1a',
     transparentBackground = false,
     showGrid = false
@@ -119,7 +136,10 @@ ${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroun
 
     // Draw wires
     wires.forEach(wire => {
-      const strokeColor = effectiveWireColor || wire.color
+      let strokeColor = effectiveWireColor || wire.color
+      if (invertColors) {
+        strokeColor = invertColor(strokeColor)
+      }
       svg += `    <line x1="${wire.start.x}" y1="${wire.start.y}" x2="${wire.end.x}" y2="${wire.end.y}" stroke="${strokeColor}" stroke-width="${wire.thickness}" stroke-linecap="round"/>\n`
     })
 
@@ -127,7 +147,14 @@ ${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroun
     components.forEach(comp => {
       const def = getComponentByType(comp.type)
       if (def) {
-        const svgPaths = componentToSVG(def, false, effectiveWireColor)
+        let colorOverride = effectiveWireColor
+        if (invertColors && !effectiveWireColor) {
+          // If inverting but no wire color override, we need to tell componentToSVG to invert
+          colorOverride = 'invert'
+        } else if (invertColors && effectiveWireColor) {
+          colorOverride = invertColor(effectiveWireColor)
+        }
+        const svgPaths = componentToSVG(def, false, colorOverride, invertColors)
         svg += `    <g transform="translate(${comp.x}, ${comp.y}) rotate(${(comp.rotation || 0) * 180 / Math.PI})">\n`
         svg += `      ${svgPaths}\n`
         svg += `    </g>\n`
@@ -152,6 +179,7 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
   const {
     useWireColor = false,
     wireColor = null,
+    invertColors = false,
     backgroundColor = '#1a1a1a',
     transparentBackground = false,
     showGrid = false
@@ -239,7 +267,11 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
 
   // Draw wires
   wires.forEach(wire => {
-    ctx.strokeStyle = effectiveWireColor || wire.color
+    let strokeColor = effectiveWireColor || wire.color
+    if (invertColors) {
+      strokeColor = invertColor(strokeColor)
+    }
+    ctx.strokeStyle = strokeColor
     ctx.lineWidth = wire.thickness
     ctx.lineCap = 'round'
     ctx.beginPath()
@@ -256,13 +288,17 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
       ctx.translate(comp.x, comp.y)
       ctx.rotate(comp.rotation || 0)
 
-      // Override colors if effectiveWireColor is specified
-      if (effectiveWireColor) {
+      // Override colors if effectiveWireColor is specified or invertColors is enabled
+      if (effectiveWireColor || invertColors) {
         // Create a proxy context that intercepts strokeStyle and fillStyle
         const proxyCtx = new Proxy(ctx, {
           get(target, prop) {
             if (prop === 'strokeStyle' || prop === 'fillStyle') {
-              return effectiveWireColor
+              if (effectiveWireColor) {
+                return invertColors ? invertColor(effectiveWireColor) : effectiveWireColor
+              }
+              // If no effectiveWireColor but invertColors is true, return inverted default
+              return target[prop] // Will be intercepted on set
             }
             const value = target[prop]
             // Bind methods to the original context
@@ -273,7 +309,13 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
           },
           set(target, prop, value) {
             if (prop === 'strokeStyle' || prop === 'fillStyle') {
-              target[prop] = effectiveWireColor
+              if (effectiveWireColor) {
+                target[prop] = invertColors ? invertColor(effectiveWireColor) : effectiveWireColor
+              } else if (invertColors) {
+                target[prop] = invertColor(value)
+              } else {
+                target[prop] = value
+              }
               return true
             }
             target[prop] = value

@@ -5,6 +5,7 @@ function ExportOptionsDialog({ isOpen, onClose, onExport, exportType }) {
   const [options, setOptions] = useState({
     useWireColor: false,
     wireColor: '#00ff00',
+    invertColors: false,
     backgroundColor: '#1a1a1a',
     transparentBackground: false,
     showGrid: false
@@ -42,6 +43,17 @@ function ExportOptionsDialog({ isOpen, onClose, onExport, exportType }) {
             disabled={!options.useWireColor}
           />
           <span>{options.wireColor}</span>
+        </div>
+
+        <div className="dialog-option">
+          <label>
+            <input
+              type="checkbox"
+              checked={options.invertColors}
+              onChange={(e) => setOptions({ ...options, invertColors: e.target.checked })}
+            />
+            線色を白黒反転
+          </label>
         </div>
 
         <div className="dialog-option">
