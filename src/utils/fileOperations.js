@@ -146,8 +146,6 @@ ${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroun
 
 // Export to PNG
 export function exportToPNG(wires, components, getComponentByType, canvasRef, options = {}) {
-  console.log('exportToPNG called with:', { wires, components, options })
-
   const {
     wireColor = null,
     backgroundColor = '#1a1a1a',
@@ -159,11 +157,8 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
   const tempCanvas = document.createElement('canvas')
   const ctx = tempCanvas.getContext('2d', { alpha: true })
 
-  console.log('tempCanvas created:', tempCanvas)
-
   // Check if there's anything to export
   if (wires.length === 0 && components.length === 0) {
-    console.error('Nothing to export')
     alert('エクスポートする内容がありません。')
     return
   }
@@ -202,8 +197,6 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
   const height = maxY - minY + padding * 2
   const offsetX = -minX + padding
   const offsetY = -minY + padding
-
-  console.log('Canvas dimensions:', { width, height, minX, minY, maxX, maxY })
 
   tempCanvas.width = width
   tempCanvas.height = height
@@ -292,13 +285,9 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
 
   ctx.restore()
 
-  console.log('Drawing complete, converting to blob...')
-
   // Export
   tempCanvas.toBlob((blob) => {
-    console.log('Blob created:', blob)
     if (!blob) {
-      console.error('Failed to create blob')
       alert('PNG生成に失敗しました。')
       return
     }
@@ -308,7 +297,6 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
     link.download = `schematic_${new Date().toISOString().slice(0, 10)}.png`
     link.click()
     URL.revokeObjectURL(url)
-    console.log('PNG export completed')
   })
 }
 
