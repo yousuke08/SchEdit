@@ -16,6 +16,9 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
   const [currentMousePos, setCurrentMousePos] = useState(null)
   const [draggingComponent, setDraggingComponent] = useState(null)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [selectionBox, setSelectionBox] = useState(null)
+  const [draggingSelection, setDraggingSelection] = useState(false)
+  const [selectionDragStart, setSelectionDragStart] = useState(null)
 
   const {
     wires,
@@ -30,7 +33,12 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     selectedComponentId,
     setSelectedComponent,
     removeComponent,
-    updateComponent
+    updateComponent,
+    editorMode,
+    selectedWireIds,
+    selectedComponentIds,
+    setMultipleSelection,
+    clearSelection
   } = useSchematicStore()
 
   // Expose methods to parent component
@@ -109,7 +117,8 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
 
     // Draw wires
     wires.forEach(wire => {
-      ctx.strokeStyle = wire.id === selectedWireId ? '#ffff00' : wire.color
+      const isSelected = wire.id === selectedWireId || selectedWireIds.includes(wire.id)
+      ctx.strokeStyle = isSelected ? '#ffff00' : wire.color
       ctx.lineWidth = wire.thickness / zoom
       ctx.lineCap = 'round'
 
@@ -119,7 +128,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       ctx.stroke()
 
       // Draw endpoints
-      if (wire.id === selectedWireId) {
+      if (isSelected) {
         ctx.fillStyle = '#ffff00'
         const pointRadius = 4 / zoom
         ctx.beginPath()
@@ -139,7 +148,8 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
 
       const componentDef = getComponentByType(comp.type)
       if (componentDef) {
-        componentDef.render(ctx, comp.id === selectedComponentId)
+        const isSelected = comp.id === selectedComponentId || selectedComponentIds.includes(comp.id)
+        componentDef.render(ctx, isSelected)
       }
 
       ctx.restore()
@@ -168,8 +178,24 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       ctx.setLineDash([])
     }
 
+    // Draw selection box
+    if (selectionBox) {
+      const { start, end } = selectionBox
+      ctx.strokeStyle = '#4a9eff'
+      ctx.fillStyle = 'rgba(74, 158, 255, 0.1)'
+      ctx.lineWidth = 2 / zoom
+
+      const x = Math.min(start.x, end.x)
+      const y = Math.min(start.y, end.y)
+      const width = Math.abs(end.x - start.x)
+      const height = Math.abs(end.y - start.y)
+
+      ctx.fillRect(x, y, width, height)
+      ctx.strokeRect(x, y, width, height)
+    }
+
     ctx.restore()
-  }, [showGrid, zoom, pan, wires, selectedWireId, drawingWire, currentMousePos, wireColor, wireThickness, components, selectedComponentId])
+  }, [showGrid, zoom, pan, wires, selectedWireId, drawingWire, currentMousePos, wireColor, wireThickness, components, selectedComponentId, selectedWireIds, selectedComponentIds, selectionBox])
 
   const handleMouseDown = (e) => {
     if (e.button === 1 || (e.button === 0 && e.shiftKey)) { // Middle button or Shift+Left
@@ -179,7 +205,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       return
     }
 
-    if (e.button === 0 && !e.shiftKey) { // Left click for wire drawing
+    if (e.button === 0 && !e.shiftKey) {
       const canvas = canvasRef.current
       const rect = canvas.getBoundingClientRect()
       const worldPos = screenToWorld({
@@ -188,6 +214,43 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       }, pan, zoom)
       const snappedPos = { x: snapToGrid(worldPos.x), y: snapToGrid(worldPos.y) }
 
+      // Selection mode
+      if (editorMode === 'select') {
+        // Check if clicking on selected items for dragging
+        let clickedSelected = false
+
+        // Check selected components
+        for (const compId of selectedComponentIds) {
+          const comp = components.find(c => c.id === compId)
+          if (!comp) continue
+
+          const componentDef = getComponentByType(comp.type)
+          if (!componentDef) continue
+
+          const dx = worldPos.x - comp.x
+          const dy = worldPos.y - comp.y
+          const angle = -(comp.rotation || 0)
+          const localX = dx * Math.cos(angle) - dy * Math.sin(angle)
+          const localY = dx * Math.sin(angle) + dy * Math.cos(angle)
+          const halfWidth = componentDef.width / 2
+          const halfHeight = componentDef.height / 2
+
+          if (Math.abs(localX) <= halfWidth && Math.abs(localY) <= halfHeight) {
+            clickedSelected = true
+            setDraggingSelection(true)
+            setSelectionDragStart(worldPos)
+            break
+          }
+        }
+
+        if (!clickedSelected) {
+          // Start selection box
+          setSelectionBox({ start: worldPos, end: worldPos })
+        }
+        return
+      }
+
+      // Draw mode (original behavior)
       if (!drawingWire) {
         // Check if clicking on a component first
         let clickedComponent = null
@@ -275,6 +338,13 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
   }
 
   const handleMouseMove = (e) => {
+    const canvas = canvasRef.current
+    const rect = canvas.getBoundingClientRect()
+    const worldPos = screenToWorld({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    }, pan, zoom)
+
     if (isPanning) {
       const dx = e.clientX - lastMousePos.x
       const dy = e.clientY - lastMousePos.y
@@ -286,14 +356,33 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       setCurrentMousePos({ x: e.clientX, y: e.clientY })
     }
 
-    if (draggingComponent) {
-      const canvas = canvasRef.current
-      const rect = canvas.getBoundingClientRect()
-      const worldPos = screenToWorld({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      }, pan, zoom)
+    // Selection box dragging
+    if (selectionBox) {
+      setSelectionBox(prev => ({ ...prev, end: worldPos }))
+    }
 
+    // Dragging selected items
+    if (draggingSelection && selectionDragStart) {
+      const dx = worldPos.x - selectionDragStart.x
+      const dy = worldPos.y - selectionDragStart.y
+
+      // Move all selected components
+      selectedComponentIds.forEach(compId => {
+        const comp = components.find(c => c.id === compId)
+        if (comp) {
+          const newX = comp.x + dx
+          const newY = comp.y + dy
+          updateComponent(compId, {
+            x: snapToGrid(newX),
+            y: snapToGrid(newY)
+          })
+        }
+      })
+
+      setSelectionDragStart(worldPos)
+    }
+
+    if (draggingComponent) {
       const newX = worldPos.x - dragOffset.x
       const newY = worldPos.y - dragOffset.y
       const snappedPos = { x: snapToGrid(newX), y: snapToGrid(newY) }
@@ -308,6 +397,42 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
   const handleMouseUp = () => {
     setIsPanning(false)
     setDraggingComponent(null)
+    setDraggingSelection(false)
+    setSelectionDragStart(null)
+
+    // Finish selection box
+    if (selectionBox) {
+      const { start, end } = selectionBox
+      const minX = Math.min(start.x, end.x)
+      const maxX = Math.max(start.x, end.x)
+      const minY = Math.min(start.y, end.y)
+      const maxY = Math.max(start.y, end.y)
+
+      const selectedWires = []
+      const selectedComps = []
+
+      // Select wires within box
+      wires.forEach(wire => {
+        const wireMinX = Math.min(wire.start.x, wire.end.x)
+        const wireMaxX = Math.max(wire.start.x, wire.end.x)
+        const wireMinY = Math.min(wire.start.y, wire.end.y)
+        const wireMaxY = Math.max(wire.start.y, wire.end.y)
+
+        if (wireMinX >= minX && wireMaxX <= maxX && wireMinY >= minY && wireMaxY <= maxY) {
+          selectedWires.push(wire.id)
+        }
+      })
+
+      // Select components within box
+      components.forEach(comp => {
+        if (comp.x >= minX && comp.x <= maxX && comp.y >= minY && comp.y <= maxY) {
+          selectedComps.push(comp.id)
+        }
+      })
+
+      setMultipleSelection(selectedWires, selectedComps)
+      setSelectionBox(null)
+    }
   }
 
   const handleKeyDown = (e) => {

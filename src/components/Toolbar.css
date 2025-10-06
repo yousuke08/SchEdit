@@ -26,6 +26,11 @@
   background-color: #4a4a4a;
 }
 
+.toolbar button.active {
+  background-color: #4a9eff;
+  border-color: #4a9eff;
+}
+
 .toolbar label {
   display: flex;
   align-items: center;
