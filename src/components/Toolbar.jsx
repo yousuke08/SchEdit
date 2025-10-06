@@ -3,10 +3,13 @@ import './Toolbar.css'
 import useSchematicStore from '../store/schematicStore'
 import { saveProjectToJSON, loadProjectFromJSON, exportToSVG, exportToPNG } from '../utils/fileOperations'
 import { getComponentByType } from './componentLibrary'
+import ExportOptionsDialog from './ExportOptionsDialog'
 
 function Toolbar({ showGrid, setShowGrid, canvasRef }) {
   const [zoom, setZoom] = useState(100)
   const [showExportMenu, setShowExportMenu] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
+  const [exportType, setExportType] = useState(null)
   const fileInputRef = useRef(null)
   const exportMenuRef = useRef(null)
   const { wires, components, addWire, addComponent } = useSchematicStore()
@@ -75,18 +78,23 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
   }
 
   const handleExportSVG = () => {
-    exportToSVG(wires, components, getComponentByType)
+    setExportType('svg')
+    setShowExportDialog(true)
     setShowExportMenu(false)
   }
 
   const handleExportPNG = () => {
-    if (canvasRef.current) {
-      const canvas = canvasRef.current.getCanvas?.()
-      if (canvas) {
-        exportToPNG(canvas)
-      }
-    }
+    setExportType('png')
+    setShowExportDialog(true)
     setShowExportMenu(false)
+  }
+
+  const handleExportWithOptions = (options) => {
+    if (exportType === 'svg') {
+      exportToSVG(wires, components, getComponentByType, options)
+    } else if (exportType === 'png') {
+      exportToPNG(wires, components, getComponentByType, canvasRef, options)
+    }
   }
 
   // Close export menu when clicking outside
@@ -146,6 +154,12 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
         <button onClick={handleZoomOut} title="ズームアウト">-</button>
         <span className="zoom-level">{zoom}%</span>
       </div>
+      <ExportOptionsDialog
+        isOpen={showExportDialog}
+        onClose={() => setShowExportDialog(false)}
+        onExport={handleExportWithOptions}
+        exportType={exportType}
+      />
     </div>
   )
 }
