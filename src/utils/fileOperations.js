@@ -44,11 +44,14 @@ export function loadProjectFromJSON(file, onLoad) {
 // Export to SVG
 export function exportToSVG(wires, components, getComponentByType, options = {}) {
   const {
+    useWireColor = false,
     wireColor = null,
     backgroundColor = '#1a1a1a',
     transparentBackground = false,
     showGrid = false
   } = options
+
+  const effectiveWireColor = useWireColor ? wireColor : null
 
   // Dynamic import for canvas to SVG converter
   import('./canvasToSVG.js').then(({ componentToSVG }) => {
@@ -116,7 +119,7 @@ ${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroun
 
     // Draw wires
     wires.forEach(wire => {
-      const strokeColor = wireColor || wire.color
+      const strokeColor = effectiveWireColor || wire.color
       svg += `    <line x1="${wire.start.x}" y1="${wire.start.y}" x2="${wire.end.x}" y2="${wire.end.y}" stroke="${strokeColor}" stroke-width="${wire.thickness}" stroke-linecap="round"/>\n`
     })
 
@@ -124,7 +127,7 @@ ${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroun
     components.forEach(comp => {
       const def = getComponentByType(comp.type)
       if (def) {
-        const svgPaths = componentToSVG(def, false, wireColor)
+        const svgPaths = componentToSVG(def, false, effectiveWireColor)
         svg += `    <g transform="translate(${comp.x}, ${comp.y}) rotate(${(comp.rotation || 0) * 180 / Math.PI})">\n`
         svg += `      ${svgPaths}\n`
         svg += `    </g>\n`
@@ -147,11 +150,14 @@ ${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroun
 // Export to PNG
 export function exportToPNG(wires, components, getComponentByType, canvasRef, options = {}) {
   const {
+    useWireColor = false,
     wireColor = null,
     backgroundColor = '#1a1a1a',
     transparentBackground = false,
     showGrid = false
   } = options
+
+  const effectiveWireColor = useWireColor ? wireColor : null
 
   // Create a temporary canvas for export
   const tempCanvas = document.createElement('canvas')
@@ -233,7 +239,7 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
 
   // Draw wires
   wires.forEach(wire => {
-    ctx.strokeStyle = wireColor || wire.color
+    ctx.strokeStyle = effectiveWireColor || wire.color
     ctx.lineWidth = wire.thickness
     ctx.lineCap = 'round'
     ctx.beginPath()
@@ -250,13 +256,13 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
       ctx.translate(comp.x, comp.y)
       ctx.rotate(comp.rotation || 0)
 
-      // Override colors if wireColor is specified
-      if (wireColor) {
+      // Override colors if effectiveWireColor is specified
+      if (effectiveWireColor) {
         // Create a proxy context that intercepts strokeStyle and fillStyle
         const proxyCtx = new Proxy(ctx, {
           get(target, prop) {
             if (prop === 'strokeStyle' || prop === 'fillStyle') {
-              return wireColor
+              return effectiveWireColor
             }
             const value = target[prop]
             // Bind methods to the original context
@@ -267,7 +273,7 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
           },
           set(target, prop, value) {
             if (prop === 'strokeStyle' || prop === 'fillStyle') {
-              target[prop] = wireColor
+              target[prop] = effectiveWireColor
               return true
             }
             target[prop] = value

@@ -3,6 +3,7 @@ import './ExportOptionsDialog.css'
 
 function ExportOptionsDialog({ isOpen, onClose, onExport, exportType }) {
   const [options, setOptions] = useState({
+    useWireColor: false,
     wireColor: '#00ff00',
     backgroundColor: '#1a1a1a',
     transparentBackground: false,
@@ -22,11 +23,23 @@ function ExportOptionsDialog({ isOpen, onClose, onExport, exportType }) {
         <h3>{exportType === 'svg' ? 'SVG' : 'PNG'}エクスポート設定</h3>
 
         <div className="dialog-option">
-          <label>線色（一括指定）:</label>
+          <label>
+            <input
+              type="checkbox"
+              checked={options.useWireColor}
+              onChange={(e) => setOptions({ ...options, useWireColor: e.target.checked })}
+            />
+            線色を一括指定
+          </label>
+        </div>
+
+        <div className="dialog-option">
+          <label>線色:</label>
           <input
             type="color"
             value={options.wireColor}
             onChange={(e) => setOptions({ ...options, wireColor: e.target.value })}
+            disabled={!options.useWireColor}
           />
           <span>{options.wireColor}</span>
         </div>
