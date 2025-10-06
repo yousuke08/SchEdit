@@ -265,7 +265,12 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
             if (prop === 'strokeStyle' || prop === 'fillStyle') {
               return wireColor
             }
-            return target[prop]
+            const value = target[prop]
+            // Bind methods to the original context
+            if (typeof value === 'function') {
+              return value.bind(target)
+            }
+            return value
           },
           set(target, prop, value) {
             if (prop === 'strokeStyle' || prop === 'fillStyle') {
