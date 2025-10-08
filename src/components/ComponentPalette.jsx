@@ -6,7 +6,7 @@ function ComponentPalette() {
   const [selectedType, setSelectedType] = useState(null)
 
   const categories = {
-    passive: { name: '受動部品', components: ['resistor', 'capacitor', 'inductor'] },
+    passive: { name: '受動部品', components: ['resistor', 'resistor_us', 'capacitor', 'inductor', 'inductor_coil'] },
     semiconductor: { name: '半導体', components: ['diode', 'mosfet_n'] },
     symbol: { name: '記号', components: ['gnd'] }
   }
@@ -47,6 +47,8 @@ function ComponentPalette() {
                         ctx.save()
                         ctx.translate(40, 30)
                         ctx.scale(0.8, 0.8)
+                        // Center the component by offsetting by half its width
+                        ctx.translate(-component.width / 2, 0)
                         component.render(ctx, false)
                         ctx.restore()
                       }

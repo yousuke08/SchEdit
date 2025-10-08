@@ -2,28 +2,58 @@
 
 export const componentLibrary = {
   resistor: {
-    name: '抵抗',
+    name: '抵抗 (JIS)',
     category: 'passive',
     width: 60,
     height: 20,
     pins: [
-      { id: 'p1', x: -30, y: 0, label: '1' },
-      { id: 'p2', x: 30, y: 0, label: '2' }
+      { id: 'p1', x: 0, y: 0, label: '1' },
+      { id: 'p2', x: 60, y: 0, label: '2' }
     ],
     render: (ctx, selected) => {
       ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
       ctx.lineWidth = 2
       ctx.fillStyle = 'transparent'
 
-      // Draw resistor symbol
+      // Draw JIS resistor symbol (rectangle)
+      // Origin at left wire start, 3 grid (60px) total
       ctx.beginPath()
-      ctx.moveTo(-30, 0)
-      ctx.lineTo(-20, 0)
-      const zigzag = [
-        [-20, 0], [-17, -7], [-11, 7], [-5, -7], [1, 7], [7, -7], [13, 7], [17, -7], [20, 0]
-      ]
-      zigzag.forEach(([x, y]) => ctx.lineTo(x, y))
-      ctx.lineTo(30, 0)
+      ctx.rect(10, -5, 40, 10)
+      ctx.moveTo(0, 0)
+      ctx.lineTo(10, 0)
+      ctx.moveTo(50, 0)
+      ctx.lineTo(60, 0)
+      ctx.stroke()
+    }
+  },
+
+  resistor_us: {
+    name: '抵抗 (ジグザグ)',
+    category: 'passive',
+    width: 60,
+    height: 20,
+    pins: [
+      { id: 'p1', x: 0, y: 0, label: '1' },
+      { id: 'p2', x: 60, y: 0, label: '2' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+      ctx.fillStyle = 'transparent'
+
+      // Draw zigzag resistor symbol following strict rules:
+      // Origin at left wire start, 3 grid (60px) total
+      ctx.beginPath()
+      ctx.moveTo(0, 0)        // グリッドの点（左端）
+      ctx.lineTo(10, 0)       // 横に線
+      ctx.lineTo(16.67, -7)   // 上端まで斜め線
+      ctx.lineTo(23.33, 7)    // 下端まで斜め線
+      ctx.lineTo(30, -7)      // 上端まで斜め線（2回目）
+      ctx.lineTo(36.67, 7)    // 下端まで斜め線
+      ctx.lineTo(43.33, -7)   // 上端まで斜め線（3回目）
+      ctx.lineTo(50, 7)       // 下端まで斜め線
+      ctx.lineTo(56.67, 0)    // 中間まで斜め線
+      ctx.lineTo(60, 0)       // 横に線でグリッドの接点に一致
       ctx.stroke()
     }
   },
@@ -31,64 +61,83 @@ export const componentLibrary = {
   capacitor: {
     name: 'コンデンサ',
     category: 'passive',
-    width: 40,
+    width: 60,
     height: 40,
     pins: [
-      { id: 'p1', x: -20, y: 0, label: '+' },
-      { id: 'p2', x: 20, y: 0, label: '-' }
+      { id: 'p1', x: 0, y: 0, label: '+' },
+      { id: 'p2', x: 60, y: 0, label: '-' }
     ],
     render: (ctx, selected) => {
       ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
       ctx.lineWidth = 2
 
-      // Draw capacitor symbol
+      // Draw JIS capacitor symbol (two parallel lines)
       ctx.beginPath()
-      ctx.moveTo(-20, 0)
-      ctx.lineTo(-5, 0)
-      ctx.stroke()
-
-      ctx.beginPath()
-      ctx.moveTo(-5, -15)
-      ctx.lineTo(-5, 15)
-      ctx.stroke()
-
-      ctx.beginPath()
-      ctx.moveTo(5, -15)
-      ctx.lineTo(5, 15)
-      ctx.stroke()
-
-      ctx.beginPath()
-      ctx.moveTo(5, 0)
-      ctx.lineTo(20, 0)
+      ctx.moveTo(0, 0)
+      ctx.lineTo(25, 0)
+      ctx.moveTo(25, -12)
+      ctx.lineTo(25, 12)
+      ctx.moveTo(35, -12)
+      ctx.lineTo(35, 12)
+      ctx.moveTo(35, 0)
+      ctx.lineTo(60, 0)
       ctx.stroke()
     }
   },
 
   inductor: {
-    name: 'インダクタ',
+    name: 'インダクタ (JIS)',
     category: 'passive',
     width: 60,
-    height: 30,
+    height: 40,
     pins: [
-      { id: 'p1', x: -30, y: 0, label: '1' },
-      { id: 'p2', x: 30, y: 0, label: '2' }
+      { id: 'p1', x: 0, y: 0, label: '1' },
+      { id: 'p2', x: 60, y: 0, label: '2' }
     ],
     render: (ctx, selected) => {
       ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
       ctx.lineWidth = 2
       ctx.fillStyle = 'transparent'
 
-      // Draw inductor symbol (coils)
+      // Draw JIS inductor symbol (rectangle with diagonal line)
       ctx.beginPath()
-      ctx.moveTo(-30, 0)
-      ctx.lineTo(-20, 0)
+      ctx.rect(10, -8, 40, 16)
+      ctx.moveTo(0, 0)
+      ctx.lineTo(10, 0)
+      ctx.moveTo(15, -8)
+      ctx.lineTo(20, 8)
+      ctx.moveTo(50, 0)
+      ctx.lineTo(60, 0)
+      ctx.stroke()
+    }
+  },
 
+  inductor_coil: {
+    name: 'インダクタ (巻線)',
+    category: 'passive',
+    width: 60,
+    height: 40,
+    pins: [
+      { id: 'p1', x: 0, y: 0, label: '1' },
+      { id: 'p2', x: 60, y: 0, label: '2' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+      ctx.fillStyle = 'transparent'
+
+      // Draw coil inductor symbol
+      ctx.beginPath()
+      ctx.moveTo(0, 0)
+      ctx.lineTo(10, 0)
+
+      // Draw 4 coils
       for (let i = 0; i < 4; i++) {
-        const x = -20 + i * 10
+        const x = 10 + i * 10
         ctx.arc(x + 5, 0, 5, Math.PI, 0, false)
       }
 
-      ctx.lineTo(30, 0)
+      ctx.lineTo(60, 0)
       ctx.stroke()
     }
   },
@@ -96,38 +145,40 @@ export const componentLibrary = {
   diode: {
     name: 'ダイオード',
     category: 'semiconductor',
-    width: 40,
+    width: 60,
     height: 30,
     pins: [
-      { id: 'anode', x: -20, y: 0, label: 'A' },
-      { id: 'cathode', x: 20, y: 0, label: 'K' }
+      { id: 'anode', x: 0, y: 0, label: 'A' },
+      { id: 'cathode', x: 60, y: 0, label: 'K' }
     ],
     render: (ctx, selected) => {
       ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
       ctx.fillStyle = selected ? '#ffff00' : '#ffffff'
       ctx.lineWidth = 2
 
-      // Draw diode symbol
+      // Draw JIS diode symbol (triangle and line)
       ctx.beginPath()
-      ctx.moveTo(-20, 0)
-      ctx.lineTo(-5, 0)
+      ctx.moveTo(0, 0)
+      ctx.lineTo(20, 0)
       ctx.stroke()
 
+      // Triangle (anode side)
       ctx.beginPath()
-      ctx.moveTo(-5, -10)
-      ctx.lineTo(-5, 10)
-      ctx.lineTo(5, 0)
+      ctx.moveTo(20, -10)
+      ctx.lineTo(20, 10)
+      ctx.lineTo(40, 0)
       ctx.closePath()
       ctx.fill()
 
+      // Cathode line
       ctx.beginPath()
-      ctx.moveTo(5, -10)
-      ctx.lineTo(5, 10)
+      ctx.moveTo(40, -10)
+      ctx.lineTo(40, 10)
       ctx.stroke()
 
       ctx.beginPath()
-      ctx.moveTo(5, 0)
-      ctx.lineTo(20, 0)
+      ctx.moveTo(40, 0)
+      ctx.lineTo(60, 0)
       ctx.stroke()
     }
   },
@@ -135,56 +186,62 @@ export const componentLibrary = {
   mosfet_n: {
     name: 'N-ch MOSFET',
     category: 'semiconductor',
-    width: 50,
-    height: 50,
+    width: 60,
+    height: 60,
     pins: [
-      { id: 'gate', x: -25, y: 0, label: 'G' },
-      { id: 'drain', x: 10, y: -25, label: 'D' },
-      { id: 'source', x: 10, y: 25, label: 'S' }
+      { id: 'gate', x: -30, y: 0, label: 'G' },
+      { id: 'drain', x: 10, y: -30, label: 'D' },
+      { id: 'source', x: 10, y: 30, label: 'S' }
     ],
     render: (ctx, selected) => {
       ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
       ctx.lineWidth = 2
 
-      // Gate
+      // Gate terminal
       ctx.beginPath()
-      ctx.moveTo(-25, 0)
-      ctx.lineTo(-10, 0)
+      ctx.moveTo(-30, 0)
+      ctx.lineTo(-8, 0)
       ctx.stroke()
 
-      // Gate line
+      // Gate line (vertical)
       ctx.beginPath()
-      ctx.moveTo(-10, -15)
-      ctx.lineTo(-10, 15)
+      ctx.moveTo(-8, -18)
+      ctx.lineTo(-8, 18)
       ctx.stroke()
 
-      // Channel
+      // Channel segments (3 short lines)
       ctx.beginPath()
-      ctx.moveTo(-3, -15)
-      ctx.lineTo(-3, -5)
-      ctx.moveTo(-3, -2)
-      ctx.lineTo(-3, 2)
-      ctx.moveTo(-3, 5)
-      ctx.lineTo(-3, 15)
+      ctx.moveTo(0, -18)
+      ctx.lineTo(0, -6)
+      ctx.moveTo(0, -3)
+      ctx.lineTo(0, 3)
+      ctx.moveTo(0, 6)
+      ctx.lineTo(0, 18)
       ctx.stroke()
 
-      // Drain
+      // Drain connection
       ctx.beginPath()
-      ctx.moveTo(-3, -10)
-      ctx.lineTo(10, -10)
-      ctx.lineTo(10, -25)
+      ctx.moveTo(0, -12)
+      ctx.lineTo(10, -12)
+      ctx.lineTo(10, -30)
       ctx.stroke()
 
-      // Source
+      // Source connection
       ctx.beginPath()
-      ctx.moveTo(-3, 10)
-      ctx.lineTo(10, 10)
-      ctx.lineTo(10, 25)
+      ctx.moveTo(0, 12)
+      ctx.lineTo(10, 12)
+      ctx.lineTo(10, 30)
       ctx.stroke()
 
-      // Body diode (optional)
+      // Substrate/Body connection (center tap)
       ctx.beginPath()
-      ctx.arc(0, 0, 20, 0, Math.PI * 2)
+      ctx.moveTo(0, 0)
+      ctx.lineTo(10, 0)
+      ctx.stroke()
+
+      // Circle enclosure
+      ctx.beginPath()
+      ctx.arc(3, 0, 24, 0, Math.PI * 2)
       ctx.stroke()
     }
   },
@@ -192,10 +249,10 @@ export const componentLibrary = {
   gnd: {
     name: 'GND',
     category: 'symbol',
-    width: 30,
-    height: 30,
+    width: 40,
+    height: 40,
     pins: [
-      { id: 'p1', x: 0, y: -15, label: '' }
+      { id: 'p1', x: 0, y: -20, label: '' }
     ],
     render: (ctx, selected) => {
       ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
@@ -203,23 +260,23 @@ export const componentLibrary = {
 
       // Draw GND symbol
       ctx.beginPath()
-      ctx.moveTo(0, -15)
+      ctx.moveTo(0, -20)
       ctx.lineTo(0, 0)
       ctx.stroke()
 
       ctx.beginPath()
-      ctx.moveTo(-12, 0)
-      ctx.lineTo(12, 0)
+      ctx.moveTo(-15, 0)
+      ctx.lineTo(15, 0)
       ctx.stroke()
 
       ctx.beginPath()
-      ctx.moveTo(-8, 5)
-      ctx.lineTo(8, 5)
+      ctx.moveTo(-10, 5)
+      ctx.lineTo(10, 5)
       ctx.stroke()
 
       ctx.beginPath()
-      ctx.moveTo(-4, 10)
-      ctx.lineTo(4, 10)
+      ctx.moveTo(-5, 10)
+      ctx.lineTo(5, 10)
       ctx.stroke()
     }
   }
