@@ -27,6 +27,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     selectedWireId,
     setSelectedWire,
     removeWire,
+    updateWire,
     wireColor,
     wireThickness,
     components,
@@ -251,6 +252,29 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
           }
         }
 
+        // Check selected wires if not already clicked on component
+        if (!clickedSelected) {
+          const clickThreshold = 10 / zoom
+          for (const wireId of selectedWireIds) {
+            const wire = wires.find(w => w.id === wireId)
+            if (!wire) continue
+
+            // Check if click is near the wire
+            const distToWire = distanceToLineSegment(
+              worldPos,
+              wire.start,
+              wire.end
+            )
+
+            if (distToWire < clickThreshold) {
+              clickedSelected = true
+              setDraggingSelection(true)
+              setSelectionDragStart(worldPos)
+              break
+            }
+          }
+        }
+
         if (!clickedSelected) {
           // Start selection box
           setSelectionBox({ start: worldPos, end: worldPos })
@@ -374,15 +398,30 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       const dx = worldPos.x - selectionDragStart.x
       const dy = worldPos.y - selectionDragStart.y
 
-      // Move all selected components
+      // Move all selected components (without snapping during drag)
       selectedComponentIds.forEach(compId => {
         const comp = components.find(c => c.id === compId)
         if (comp) {
-          const newX = comp.x + dx
-          const newY = comp.y + dy
           updateComponent(compId, {
-            x: snapToGrid(newX),
-            y: snapToGrid(newY)
+            x: comp.x + dx,
+            y: comp.y + dy
+          })
+        }
+      })
+
+      // Move all selected wires (without snapping during drag)
+      selectedWireIds.forEach(wireId => {
+        const wire = wires.find(w => w.id === wireId)
+        if (wire) {
+          updateWire(wireId, {
+            start: {
+              x: wire.start.x + dx,
+              y: wire.start.y + dy
+            },
+            end: {
+              x: wire.end.x + dx,
+              y: wire.end.y + dy
+            }
           })
         }
       })
@@ -405,6 +444,36 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
   const handleMouseUp = () => {
     setIsPanning(false)
     setDraggingComponent(null)
+
+    // Snap selected items to grid after dragging
+    if (draggingSelection) {
+      selectedComponentIds.forEach(compId => {
+        const comp = components.find(c => c.id === compId)
+        if (comp) {
+          updateComponent(compId, {
+            x: snapToGrid(comp.x),
+            y: snapToGrid(comp.y)
+          })
+        }
+      })
+
+      selectedWireIds.forEach(wireId => {
+        const wire = wires.find(w => w.id === wireId)
+        if (wire) {
+          updateWire(wireId, {
+            start: {
+              x: snapToGrid(wire.start.x),
+              y: snapToGrid(wire.start.y)
+            },
+            end: {
+              x: snapToGrid(wire.end.x),
+              y: snapToGrid(wire.end.y)
+            }
+          })
+        }
+      })
+    }
+
     setDraggingSelection(false)
     setSelectionDragStart(null)
 
