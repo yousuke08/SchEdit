@@ -41,20 +41,36 @@ export const componentLibrary = {
       ctx.lineWidth = 2
       ctx.fillStyle = 'transparent'
 
-      // Draw zigzag resistor symbol following strict rules:
-      // Origin at left wire start, 3 grid (60px) total
+      // Draw zigzag resistor symbol (point symmetric, 3 peaks 3 valleys)
+      // Draw left half (1.5 peaks), then rotate 180° around center for right half
+      // Wire lead: 12.5px, zigzag compressed to fit
+
+      // Left half
       ctx.beginPath()
-      ctx.moveTo(0, 0)        // グリッドの点（左端）
-      ctx.lineTo(10, 0)       // 横に線
-      ctx.lineTo(16.67, -7)   // 上端まで斜め線
-      ctx.lineTo(23.33, 7)    // 下端まで斜め線
-      ctx.lineTo(30, -7)      // 上端まで斜め線（2回目）
-      ctx.lineTo(36.67, 7)    // 下端まで斜め線
-      ctx.lineTo(43.33, -7)   // 上端まで斜め線（3回目）
-      ctx.lineTo(50, 7)       // 下端まで斜め線
-      ctx.lineTo(56.67, 0)    // 中間まで斜め線
-      ctx.lineTo(60, 0)       // 横に線でグリッドの接点に一致
+      ctx.moveTo(0, 0)
+      ctx.lineTo(10.5, 0)    // 配線 (dx=12.5, dy=0)
+      ctx.lineTo(14.5, 7)    // 谷1 (dx=5, dy=7)
+      ctx.lineTo(20.5, -7)   // 山1 (dx=5, dy=-14)
+      ctx.lineTo(26.5, 7)    // 谷2 (dx=5, dy=14)
+      ctx.lineTo(30, 0)      // 山の半分 (dx=2.5, dy=-7)
       ctx.stroke()
+
+      // Right half - rotate 180° around center point (30, 0)
+      ctx.save()
+      ctx.translate(30, 0)
+      ctx.rotate(Math.PI)
+      ctx.translate(-30, 0)
+
+      ctx.beginPath()
+      ctx.moveTo(0, 0)
+      ctx.lineTo(10.5, 0)
+      ctx.lineTo(14.5, 7)
+      ctx.lineTo(20.5, -7)
+      ctx.lineTo(26.5, 7)
+      ctx.lineTo(30, 0)
+      ctx.stroke()
+
+      ctx.restore()
     }
   },
 
