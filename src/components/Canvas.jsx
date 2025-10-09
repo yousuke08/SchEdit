@@ -525,11 +525,29 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       setSelectedComponent(null)
       setSelectionBox(null)
       clearSelection()
-    } else if (e.key === 'Delete') {
-      if (selectedWireId) {
-        removeWire(selectedWireId)
-      } else if (selectedComponentId) {
-        removeComponent(selectedComponentId)
+    } else if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault()
+
+      // Get current state directly from store to avoid stale closure
+      const state = useSchematicStore.getState()
+
+      // Check for multiple selections first (selection mode)
+      if (state.selectedWireIds.length > 0) {
+        state.selectedWireIds.forEach(id => removeWire(id))
+        clearSelection()
+        return
+      }
+      if (state.selectedComponentIds.length > 0) {
+        state.selectedComponentIds.forEach(id => removeComponent(id))
+        clearSelection()
+        return
+      }
+
+      // Check for single selections (draw mode)
+      if (state.selectedWireId) {
+        removeWire(state.selectedWireId)
+      } else if (state.selectedComponentId) {
+        removeComponent(state.selectedComponentId)
       }
     } else if (e.key === 'r' || e.key === 'R') {
       if (selectedComponentId) {
