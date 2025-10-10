@@ -6,8 +6,9 @@ function ComponentPalette() {
   const [selectedType, setSelectedType] = useState(null)
 
   const categories = {
-    passive: { name: '受動部品', components: ['resistor', 'resistor_us', 'capacitor', 'inductor', 'inductor_coil'] },
-    semiconductor: { name: '半導体', components: ['diode', 'mosfet_n'] },
+    passive: { name: '受動部品', components: ['resistor', 'resistor_us', 'capacitor', 'capacitor_electrolytic', 'inductor', 'inductor_coil', 'transformer'] },
+    semiconductor: { name: '半導体', components: ['diode', 'diode_schottky', 'diode_zener', 'bjt_npn', 'bjt_pnp', 'mosfet_n', 'mosfet_p', 'mosfet_n_diode'] },
+    source: { name: '電源', components: ['voltage_source', 'current_source'] },
     symbol: { name: '記号', components: ['gnd'] }
   }
 

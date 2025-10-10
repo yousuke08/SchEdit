@@ -295,6 +295,533 @@ export const componentLibrary = {
       ctx.lineTo(5, 10)
       ctx.stroke()
     }
+  },
+
+  voltage_source: {
+    name: '電圧源',
+    category: 'source',
+    width: 60,
+    height: 60,
+    pins: [
+      { id: 'pos', x: 0, y: -30, label: '+' },
+      { id: 'neg', x: 0, y: 30, label: '-' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Circle
+      ctx.beginPath()
+      ctx.arc(0, 0, 15, 0, Math.PI * 2)
+      ctx.stroke()
+
+      // Terminals
+      ctx.beginPath()
+      ctx.moveTo(0, -30)
+      ctx.lineTo(0, -15)
+      ctx.moveTo(0, 15)
+      ctx.lineTo(0, 30)
+      ctx.stroke()
+
+      // + symbol
+      ctx.beginPath()
+      ctx.moveTo(-4, -20)
+      ctx.lineTo(4, -20)
+      ctx.moveTo(0, -24)
+      ctx.lineTo(0, -16)
+      ctx.stroke()
+
+      // - symbol
+      ctx.beginPath()
+      ctx.moveTo(-4, 20)
+      ctx.lineTo(4, 20)
+      ctx.stroke()
+    }
+  },
+
+  current_source: {
+    name: '電流源',
+    category: 'source',
+    width: 60,
+    height: 60,
+    pins: [
+      { id: 'pos', x: 0, y: -30, label: '+' },
+      { id: 'neg', x: 0, y: 30, label: '-' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Circle
+      ctx.beginPath()
+      ctx.arc(0, 0, 15, 0, Math.PI * 2)
+      ctx.stroke()
+
+      // Terminals
+      ctx.beginPath()
+      ctx.moveTo(0, -30)
+      ctx.lineTo(0, -15)
+      ctx.moveTo(0, 15)
+      ctx.lineTo(0, 30)
+      ctx.stroke()
+
+      // Arrow pointing up
+      ctx.beginPath()
+      ctx.moveTo(0, -8)
+      ctx.lineTo(0, 8)
+      ctx.moveTo(0, -8)
+      ctx.lineTo(-4, -4)
+      ctx.moveTo(0, -8)
+      ctx.lineTo(4, -4)
+      ctx.stroke()
+    }
+  },
+
+  mosfet_p: {
+    name: 'P-ch MOSFET',
+    category: 'semiconductor',
+    width: 60,
+    height: 60,
+    pins: [
+      { id: 'gate', x: -30, y: 0, label: 'G' },
+      { id: 'drain', x: 10, y: 30, label: 'D' },
+      { id: 'source', x: 10, y: -30, label: 'S' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Gate terminal
+      ctx.beginPath()
+      ctx.moveTo(-30, 0)
+      ctx.lineTo(-8, 0)
+      ctx.stroke()
+
+      // Gate line (vertical)
+      ctx.beginPath()
+      ctx.moveTo(-8, -18)
+      ctx.lineTo(-8, 18)
+      ctx.stroke()
+
+      // Channel segments (3 short lines)
+      ctx.beginPath()
+      ctx.moveTo(0, -18)
+      ctx.lineTo(0, -6)
+      ctx.moveTo(0, -3)
+      ctx.lineTo(0, 3)
+      ctx.moveTo(0, 6)
+      ctx.lineTo(0, 18)
+      ctx.stroke()
+
+      // Source connection (top for P-ch)
+      ctx.beginPath()
+      ctx.moveTo(0, -12)
+      ctx.lineTo(10, -12)
+      ctx.lineTo(10, -30)
+      ctx.stroke()
+
+      // Drain connection (bottom for P-ch)
+      ctx.beginPath()
+      ctx.moveTo(0, 12)
+      ctx.lineTo(10, 12)
+      ctx.lineTo(10, 30)
+      ctx.stroke()
+
+      // Body connection with arrow pointing inward (P-ch)
+      ctx.beginPath()
+      ctx.moveTo(0, 0)
+      ctx.lineTo(10, 0)
+      ctx.moveTo(-4, 0)
+      ctx.lineTo(0, 0)
+      ctx.lineTo(-2, -3)
+      ctx.moveTo(0, 0)
+      ctx.lineTo(-2, 3)
+      ctx.stroke()
+
+      // Circle enclosure
+      ctx.beginPath()
+      ctx.arc(3, 0, 24, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+  },
+
+  mosfet_n_diode: {
+    name: 'N-ch MOSFET (ダイオード付)',
+    category: 'semiconductor',
+    width: 60,
+    height: 60,
+    pins: [
+      { id: 'gate', x: -30, y: 0, label: 'G' },
+      { id: 'drain', x: 10, y: -30, label: 'D' },
+      { id: 'source', x: 10, y: 30, label: 'S' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.fillStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Gate terminal
+      ctx.beginPath()
+      ctx.moveTo(-30, 0)
+      ctx.lineTo(-8, 0)
+      ctx.stroke()
+
+      // Gate line (vertical)
+      ctx.beginPath()
+      ctx.moveTo(-8, -18)
+      ctx.lineTo(-8, 18)
+      ctx.stroke()
+
+      // Channel segments (3 short lines)
+      ctx.beginPath()
+      ctx.moveTo(0, -18)
+      ctx.lineTo(0, -6)
+      ctx.moveTo(0, -3)
+      ctx.lineTo(0, 3)
+      ctx.moveTo(0, 6)
+      ctx.lineTo(0, 18)
+      ctx.stroke()
+
+      // Drain connection
+      ctx.beginPath()
+      ctx.moveTo(0, -12)
+      ctx.lineTo(10, -12)
+      ctx.lineTo(10, -30)
+      ctx.stroke()
+
+      // Source connection
+      ctx.beginPath()
+      ctx.moveTo(0, 12)
+      ctx.lineTo(10, 12)
+      ctx.lineTo(10, 30)
+      ctx.stroke()
+
+      // Body connection
+      ctx.beginPath()
+      ctx.moveTo(0, 0)
+      ctx.lineTo(10, 0)
+      ctx.stroke()
+
+      // Body diode (vertical, cathode at drain side)
+      ctx.save()
+      ctx.translate(16, 0)
+      ctx.rotate(Math.PI / 2)
+
+      // Triangle pointing right (toward drain)
+      ctx.beginPath()
+      ctx.moveTo(-4, -3)
+      ctx.lineTo(-4, 3)
+      ctx.lineTo(0, 0)
+      ctx.closePath()
+      ctx.fill()
+
+      // Cathode line
+      ctx.beginPath()
+      ctx.moveTo(0, -3)
+      ctx.lineTo(0, 3)
+      ctx.stroke()
+
+      ctx.restore()
+
+      // Circle enclosure
+      ctx.beginPath()
+      ctx.arc(3, 0, 24, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+  },
+
+  bjt_npn: {
+    name: 'NPN トランジスタ',
+    category: 'semiconductor',
+    width: 60,
+    height: 60,
+    pins: [
+      { id: 'base', x: -30, y: 0, label: 'B' },
+      { id: 'collector', x: 10, y: -30, label: 'C' },
+      { id: 'emitter', x: 10, y: 30, label: 'E' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.fillStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Base terminal
+      ctx.beginPath()
+      ctx.moveTo(-30, 0)
+      ctx.lineTo(-5, 0)
+      ctx.stroke()
+
+      // Base line (vertical)
+      ctx.beginPath()
+      ctx.moveTo(-5, -15)
+      ctx.lineTo(-5, 15)
+      ctx.stroke()
+
+      // Collector connection
+      ctx.beginPath()
+      ctx.moveTo(-5, -10)
+      ctx.lineTo(10, -20)
+      ctx.lineTo(10, -30)
+      ctx.stroke()
+
+      // Emitter connection
+      ctx.beginPath()
+      ctx.moveTo(-5, 10)
+      ctx.lineTo(10, 20)
+      ctx.lineTo(10, 30)
+      ctx.stroke()
+
+      // Emitter arrow (pointing outward for NPN)
+      ctx.beginPath()
+      ctx.moveTo(10, 20)
+      ctx.lineTo(6, 15)
+      ctx.moveTo(10, 20)
+      ctx.lineTo(5, 20)
+      ctx.fill()
+
+      // Circle enclosure
+      ctx.beginPath()
+      ctx.arc(3, 0, 24, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+  },
+
+  bjt_pnp: {
+    name: 'PNP トランジスタ',
+    category: 'semiconductor',
+    width: 60,
+    height: 60,
+    pins: [
+      { id: 'base', x: -30, y: 0, label: 'B' },
+      { id: 'collector', x: 10, y: 30, label: 'C' },
+      { id: 'emitter', x: 10, y: -30, label: 'E' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.fillStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Base terminal
+      ctx.beginPath()
+      ctx.moveTo(-30, 0)
+      ctx.lineTo(-5, 0)
+      ctx.stroke()
+
+      // Base line (vertical)
+      ctx.beginPath()
+      ctx.moveTo(-5, -15)
+      ctx.lineTo(-5, 15)
+      ctx.stroke()
+
+      // Emitter connection (top for PNP)
+      ctx.beginPath()
+      ctx.moveTo(-5, -10)
+      ctx.lineTo(10, -20)
+      ctx.lineTo(10, -30)
+      ctx.stroke()
+
+      // Collector connection (bottom for PNP)
+      ctx.beginPath()
+      ctx.moveTo(-5, 10)
+      ctx.lineTo(10, 20)
+      ctx.lineTo(10, 30)
+      ctx.stroke()
+
+      // Base arrow (pointing inward for PNP)
+      ctx.beginPath()
+      ctx.moveTo(-5, -10)
+      ctx.lineTo(-9, -5)
+      ctx.moveTo(-5, -10)
+      ctx.lineTo(-10, -10)
+      ctx.fill()
+
+      // Circle enclosure
+      ctx.beginPath()
+      ctx.arc(3, 0, 24, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+  },
+
+  diode_schottky: {
+    name: 'ショットキーダイオード',
+    category: 'semiconductor',
+    width: 60,
+    height: 30,
+    pins: [
+      { id: 'anode', x: 0, y: 0, label: 'A' },
+      { id: 'cathode', x: 60, y: 0, label: 'K' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.fillStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Wire
+      ctx.beginPath()
+      ctx.moveTo(0, 0)
+      ctx.lineTo(20, 0)
+      ctx.stroke()
+
+      // Triangle (anode side)
+      ctx.beginPath()
+      ctx.moveTo(20, -10)
+      ctx.lineTo(20, 10)
+      ctx.lineTo(40, 0)
+      ctx.closePath()
+      ctx.fill()
+
+      // Cathode with Schottky symbol (S shape)
+      ctx.beginPath()
+      ctx.moveTo(40, -10)
+      ctx.lineTo(40, 10)
+      ctx.moveTo(40, -10)
+      ctx.lineTo(35, -10)
+      ctx.moveTo(40, 10)
+      ctx.lineTo(45, 10)
+      ctx.stroke()
+
+      ctx.beginPath()
+      ctx.moveTo(40, 0)
+      ctx.lineTo(60, 0)
+      ctx.stroke()
+    }
+  },
+
+  diode_zener: {
+    name: 'ツェナーダイオード',
+    category: 'semiconductor',
+    width: 60,
+    height: 30,
+    pins: [
+      { id: 'anode', x: 0, y: 0, label: 'A' },
+      { id: 'cathode', x: 60, y: 0, label: 'K' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.fillStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Wire
+      ctx.beginPath()
+      ctx.moveTo(0, 0)
+      ctx.lineTo(20, 0)
+      ctx.stroke()
+
+      // Triangle (anode side)
+      ctx.beginPath()
+      ctx.moveTo(20, -10)
+      ctx.lineTo(20, 10)
+      ctx.lineTo(40, 0)
+      ctx.closePath()
+      ctx.fill()
+
+      // Cathode with Zener symbol (Z shape)
+      ctx.beginPath()
+      ctx.moveTo(40, -10)
+      ctx.lineTo(40, 10)
+      ctx.moveTo(40, -10)
+      ctx.lineTo(35, -10)
+      ctx.lineTo(35, -6)
+      ctx.moveTo(40, 10)
+      ctx.lineTo(45, 10)
+      ctx.lineTo(45, 6)
+      ctx.stroke()
+
+      ctx.beginPath()
+      ctx.moveTo(40, 0)
+      ctx.lineTo(60, 0)
+      ctx.stroke()
+    }
+  },
+
+  capacitor_electrolytic: {
+    name: '電解コンデンサ',
+    category: 'passive',
+    width: 60,
+    height: 40,
+    pins: [
+      { id: 'pos', x: 0, y: 0, label: '+' },
+      { id: 'neg', x: 60, y: 0, label: '-' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Draw same as regular capacitor
+      ctx.beginPath()
+      ctx.moveTo(0, 0)
+      ctx.lineTo(25, 0)
+      ctx.moveTo(25, -12)
+      ctx.lineTo(25, 12)
+      ctx.moveTo(35, -12)
+      ctx.lineTo(35, 12)
+      ctx.moveTo(35, 0)
+      ctx.lineTo(60, 0)
+      ctx.stroke()
+
+      // Add hatching between the two plates (3 lines)
+      ctx.beginPath()
+      ctx.moveTo(26, -12)
+      ctx.lineTo(34, -5)
+      ctx.moveTo(26, -3)
+      ctx.lineTo(34, 4)
+      ctx.moveTo(26, 6)
+      ctx.lineTo(34, 12)
+      ctx.stroke()
+
+      // + symbol (small, upper left)
+      ctx.beginPath()
+      ctx.moveTo(14, -10)
+      ctx.lineTo(22, -10)
+      ctx.moveTo(18, -14)
+      ctx.lineTo(18, -6)
+      ctx.stroke()
+    }
+  },
+
+  transformer: {
+    name: 'トランス',
+    category: 'passive',
+    width: 80,
+    height: 80,
+    pins: [
+      { id: 'p1', x: 0, y: -20, label: '1' },
+      { id: 'p2', x: 0, y: 20, label: '2' },
+      { id: 's1', x: 80, y: -20, label: '3' },
+      { id: 's2', x: 80, y: 20, label: '4' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Primary coil (left)
+      ctx.beginPath()
+      ctx.moveTo(0, -20)
+      ctx.lineTo(15, -20)
+      for (let i = 0; i < 4; i++) {
+        ctx.arc(15, -20 + 5 + i * 10, 5, -Math.PI / 2, Math.PI / 2, false)
+      }
+      ctx.lineTo(0, 20)
+      ctx.stroke()
+
+      // Secondary coil (right)
+      ctx.beginPath()
+      ctx.moveTo(80, -20)
+      ctx.lineTo(65, -20)
+      for (let i = 0; i < 4; i++) {
+        ctx.arc(65, -20 + 5 + i * 10, 5, Math.PI / 2, -Math.PI / 2, false)
+      }
+      ctx.lineTo(80, 20)
+      ctx.stroke()
+
+      // Core (two vertical lines)
+      ctx.beginPath()
+      ctx.moveTo(35, -25)
+      ctx.lineTo(35, 25)
+      ctx.moveTo(45, -25)
+      ctx.lineTo(45, 25)
+      ctx.stroke()
+    }
   }
 }
 
