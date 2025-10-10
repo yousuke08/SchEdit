@@ -101,33 +101,6 @@ export const componentLibrary = {
     }
   },
 
-  capacitor_reverse: {
-    name: 'コンデンサ (反転)',
-    category: 'passive',
-    width: 60,
-    height: 40,
-    pins: [
-      { id: 'p1', x: 60, y: 0, label: '1' },
-      { id: 'p2', x: 0, y: 0, label: '2' }
-    ],
-    render: (ctx, selected) => {
-      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
-      ctx.lineWidth = 2
-
-      // Draw JIS capacitor symbol (flipped left-right)
-      ctx.beginPath()
-      ctx.moveTo(60, 0)
-      ctx.lineTo(35, 0)
-      ctx.moveTo(35, -12)
-      ctx.lineTo(35, 12)
-      ctx.moveTo(25, -12)
-      ctx.lineTo(25, 12)
-      ctx.moveTo(25, 0)
-      ctx.lineTo(0, 0)
-      ctx.stroke()
-    }
-  },
-
   inductor: {
     name: 'インダクタ (JIS)',
     category: 'passive',
