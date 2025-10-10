@@ -148,6 +148,11 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       ctx.translate(comp.x, comp.y)
       ctx.rotate(comp.rotation || 0)
 
+      // Apply flip transformations
+      const scaleX = comp.flipX ? -1 : 1
+      const scaleY = comp.flipY ? -1 : 1
+      ctx.scale(scaleX, scaleY)
+
       const componentDef = getComponentByType(comp.type)
       if (componentDef) {
         const isSelected = comp.id === selectedComponentId || selectedComponentIds.includes(comp.id)
@@ -550,12 +555,76 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         removeComponent(state.selectedComponentId)
       }
     } else if (e.key === 'r' || e.key === 'R') {
-      if (selectedComponentId) {
-        const component = components.find(c => c.id === selectedComponentId)
+      // Get current state directly from store
+      const state = useSchematicStore.getState()
+
+      // Rotate multiple selected components (selection mode)
+      if (state.selectedComponentIds.length > 0) {
+        state.selectedComponentIds.forEach(compId => {
+          const component = components.find(c => c.id === compId)
+          if (component) {
+            const currentRotation = component.rotation || 0
+            updateComponent(compId, {
+              rotation: currentRotation + Math.PI / 2
+            })
+          }
+        })
+      }
+      // Rotate single selected component (draw mode)
+      else if (state.selectedComponentId) {
+        const component = components.find(c => c.id === state.selectedComponentId)
         if (component) {
           const currentRotation = component.rotation || 0
-          updateComponent(selectedComponentId, {
+          updateComponent(state.selectedComponentId, {
             rotation: currentRotation + Math.PI / 2
+          })
+        }
+      }
+    } else if (e.key === 'f' || e.key === 'F') {
+      // Get current state directly from store
+      const state = useSchematicStore.getState()
+
+      // Flip multiple selected components horizontally (selection mode)
+      if (state.selectedComponentIds.length > 0) {
+        state.selectedComponentIds.forEach(compId => {
+          const component = components.find(c => c.id === compId)
+          if (component) {
+            updateComponent(compId, {
+              flipX: !component.flipX
+            })
+          }
+        })
+      }
+      // Flip single selected component (draw mode)
+      else if (state.selectedComponentId) {
+        const component = components.find(c => c.id === state.selectedComponentId)
+        if (component) {
+          updateComponent(state.selectedComponentId, {
+            flipX: !component.flipX
+          })
+        }
+      }
+    } else if (e.key === 'v' || e.key === 'V') {
+      // Get current state directly from store
+      const state = useSchematicStore.getState()
+
+      // Flip multiple selected components vertically (selection mode)
+      if (state.selectedComponentIds.length > 0) {
+        state.selectedComponentIds.forEach(compId => {
+          const component = components.find(c => c.id === compId)
+          if (component) {
+            updateComponent(compId, {
+              flipY: !component.flipY
+            })
+          }
+        })
+      }
+      // Flip single selected component (draw mode)
+      else if (state.selectedComponentId) {
+        const component = components.find(c => c.id === state.selectedComponentId)
+        if (component) {
+          updateComponent(state.selectedComponentId, {
+            flipY: !component.flipY
           })
         }
       }
