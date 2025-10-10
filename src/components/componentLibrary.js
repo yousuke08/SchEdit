@@ -80,14 +80,14 @@ export const componentLibrary = {
     width: 60,
     height: 40,
     pins: [
-      { id: 'p1', x: 0, y: 0, label: '+' },
-      { id: 'p2', x: 60, y: 0, label: '-' }
+      { id: 'p1', x: 0, y: 0, label: '1' },
+      { id: 'p2', x: 60, y: 0, label: '2' }
     ],
     render: (ctx, selected) => {
       ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
       ctx.lineWidth = 2
 
-      // Draw JIS capacitor symbol (two parallel lines)
+      // Draw JIS capacitor symbol (two parallel vertical lines, horizontal orientation)
       ctx.beginPath()
       ctx.moveTo(0, 0)
       ctx.lineTo(25, 0)
@@ -97,6 +97,33 @@ export const componentLibrary = {
       ctx.lineTo(35, 12)
       ctx.moveTo(35, 0)
       ctx.lineTo(60, 0)
+      ctx.stroke()
+    }
+  },
+
+  capacitor_reverse: {
+    name: 'コンデンサ (反転)',
+    category: 'passive',
+    width: 60,
+    height: 40,
+    pins: [
+      { id: 'p1', x: 60, y: 0, label: '1' },
+      { id: 'p2', x: 0, y: 0, label: '2' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Draw JIS capacitor symbol (flipped left-right)
+      ctx.beginPath()
+      ctx.moveTo(60, 0)
+      ctx.lineTo(35, 0)
+      ctx.moveTo(35, -12)
+      ctx.lineTo(35, 12)
+      ctx.moveTo(25, -12)
+      ctx.lineTo(25, 12)
+      ctx.moveTo(25, 0)
+      ctx.lineTo(0, 0)
       ctx.stroke()
     }
   },
@@ -300,41 +327,37 @@ export const componentLibrary = {
   voltage_source: {
     name: '電圧源',
     category: 'source',
-    width: 60,
+    width: 24,
     height: 60,
     pins: [
-      { id: 'pos', x: 0, y: -30, label: '+' },
-      { id: 'neg', x: 0, y: 30, label: '-' }
+      { id: 'pos', x: 0, y: 0, label: '+' },
+      { id: 'neg', x: 0, y: 60, label: '-' }
     ],
     render: (ctx, selected) => {
       ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
       ctx.lineWidth = 2
 
-      // Circle
+      // Based on capacitor structure (vertical)
       ctx.beginPath()
-      ctx.arc(0, 0, 15, 0, Math.PI * 2)
+      ctx.moveTo(0, 0)
+      ctx.lineTo(0, 25)
       ctx.stroke()
 
-      // Terminals
+      // Positive plate (long horizontal line)
       ctx.beginPath()
-      ctx.moveTo(0, -30)
-      ctx.lineTo(0, -15)
-      ctx.moveTo(0, 15)
-      ctx.lineTo(0, 30)
+      ctx.moveTo(-12, 25)
+      ctx.lineTo(12, 25)
       ctx.stroke()
 
-      // + symbol
+      // Negative plate (short horizontal line)
       ctx.beginPath()
-      ctx.moveTo(-4, -20)
-      ctx.lineTo(4, -20)
-      ctx.moveTo(0, -24)
-      ctx.lineTo(0, -16)
+      ctx.moveTo(-6, 35)
+      ctx.lineTo(6, 35)
       ctx.stroke()
 
-      // - symbol
       ctx.beginPath()
-      ctx.moveTo(-4, 20)
-      ctx.lineTo(4, 20)
+      ctx.moveTo(0, 35)
+      ctx.lineTo(0, 60)
       ctx.stroke()
     }
   },
@@ -342,37 +365,36 @@ export const componentLibrary = {
   current_source: {
     name: '電流源',
     category: 'source',
-    width: 60,
+    width: 24,
     height: 60,
     pins: [
-      { id: 'pos', x: 0, y: -30, label: '+' },
-      { id: 'neg', x: 0, y: 30, label: '-' }
+      { id: 'pos', x: 0, y: 0, label: '+' },
+      { id: 'neg', x: 0, y: 60, label: '-' }
     ],
     render: (ctx, selected) => {
       ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
       ctx.lineWidth = 2
 
-      // Circle
+      // Circle centered at y=30, width is 24 (radius 12)
       ctx.beginPath()
-      ctx.arc(0, 0, 15, 0, Math.PI * 2)
+      ctx.arc(0, 30, 12, 0, Math.PI * 2)
       ctx.stroke()
 
       // Terminals
       ctx.beginPath()
-      ctx.moveTo(0, -30)
-      ctx.lineTo(0, -15)
-      ctx.moveTo(0, 15)
-      ctx.lineTo(0, 30)
+      ctx.moveTo(0, 0)
+      ctx.lineTo(0, 18)
+      ctx.moveTo(0, 42)
+      ctx.lineTo(0, 60)
       ctx.stroke()
 
-      // Arrow pointing up
+      // Arrow pointing up inside circle
       ctx.beginPath()
-      ctx.moveTo(0, -8)
-      ctx.lineTo(0, 8)
-      ctx.moveTo(0, -8)
-      ctx.lineTo(-4, -4)
-      ctx.moveTo(0, -8)
-      ctx.lineTo(4, -4)
+      ctx.moveTo(0, 36)
+      ctx.lineTo(0, 24)
+      ctx.lineTo(-4, 28)
+      ctx.moveTo(0, 24)
+      ctx.lineTo(4, 28)
       ctx.stroke()
     }
   },
@@ -737,44 +759,45 @@ export const componentLibrary = {
   capacitor_electrolytic: {
     name: '電解コンデンサ',
     category: 'passive',
-    width: 60,
-    height: 40,
+    width: 24,
+    height: 60,
     pins: [
       { id: 'pos', x: 0, y: 0, label: '+' },
-      { id: 'neg', x: 60, y: 0, label: '-' }
+      { id: 'neg', x: 0, y: 60, label: '-' }
     ],
     render: (ctx, selected) => {
       ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
       ctx.lineWidth = 2
 
-      // Draw same as regular capacitor
+      // Draw same as regular capacitor (vertical)
+      // Width is 24 (-12 to 12), centered at x=0
       ctx.beginPath()
       ctx.moveTo(0, 0)
-      ctx.lineTo(25, 0)
-      ctx.moveTo(25, -12)
-      ctx.lineTo(25, 12)
-      ctx.moveTo(35, -12)
-      ctx.lineTo(35, 12)
-      ctx.moveTo(35, 0)
-      ctx.lineTo(60, 0)
+      ctx.lineTo(0, 25)
+      ctx.moveTo(-12, 25)
+      ctx.lineTo(12, 25)
+      ctx.moveTo(-12, 35)
+      ctx.lineTo(12, 35)
+      ctx.moveTo(0, 35)
+      ctx.lineTo(0, 60)
       ctx.stroke()
 
       // Add hatching between the two plates (3 lines)
       ctx.beginPath()
-      ctx.moveTo(26, -12)
-      ctx.lineTo(34, -5)
-      ctx.moveTo(26, -3)
-      ctx.lineTo(34, 4)
-      ctx.moveTo(26, 6)
-      ctx.lineTo(34, 12)
+      ctx.moveTo(-10, 26)
+      ctx.lineTo(-5, 34)
+      ctx.moveTo(-1, 26)
+      ctx.lineTo(3, 34)
+      ctx.moveTo(8, 26)
+      ctx.lineTo(12, 34)
       ctx.stroke()
 
       // + symbol (small, upper left)
       ctx.beginPath()
-      ctx.moveTo(14, -10)
-      ctx.lineTo(22, -10)
-      ctx.moveTo(18, -14)
-      ctx.lineTo(18, -6)
+      ctx.moveTo(-10, 16)
+      ctx.lineTo(-10, 8)
+      ctx.moveTo(-14, 12)
+      ctx.lineTo(-6, 12)
       ctx.stroke()
     }
   },
