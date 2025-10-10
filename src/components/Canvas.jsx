@@ -558,16 +558,34 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       // Get current state directly from store
       const state = useSchematicStore.getState()
 
-      // Rotate multiple selected components (selection mode)
+      // Rotate multiple selected components as a group (selection mode)
       if (state.selectedComponentIds.length > 0) {
-        state.selectedComponentIds.forEach(compId => {
-          const component = components.find(c => c.id === compId)
-          if (component) {
-            const currentRotation = component.rotation || 0
-            updateComponent(compId, {
-              rotation: currentRotation + Math.PI / 2
-            })
-          }
+        const selectedComps = state.selectedComponentIds
+          .map(id => components.find(c => c.id === id))
+          .filter(c => c)
+
+        // Calculate center of selection
+        const centerX = selectedComps.reduce((sum, c) => sum + c.x, 0) / selectedComps.length
+        const centerY = selectedComps.reduce((sum, c) => sum + c.y, 0) / selectedComps.length
+
+        // Snap center to nearest grid
+        const gridCenterX = snapToGrid(centerX)
+        const gridCenterY = snapToGrid(centerY)
+
+        selectedComps.forEach(comp => {
+          // Translate to origin
+          const dx = comp.x - gridCenterX
+          const dy = comp.y - gridCenterY
+
+          // Rotate 90 degrees around grid center
+          const newX = gridCenterX - dy
+          const newY = gridCenterY + dx
+
+          updateComponent(comp.id, {
+            x: newX,
+            y: newY,
+            rotation: (comp.rotation || 0) + Math.PI / 2
+          })
         })
       }
       // Rotate single selected component (draw mode)
@@ -584,15 +602,31 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       // Get current state directly from store
       const state = useSchematicStore.getState()
 
-      // Flip multiple selected components horizontally (selection mode)
+      // Flip multiple selected components horizontally as a group (selection mode)
       if (state.selectedComponentIds.length > 0) {
-        state.selectedComponentIds.forEach(compId => {
-          const component = components.find(c => c.id === compId)
-          if (component) {
-            updateComponent(compId, {
-              flipX: !component.flipX
-            })
-          }
+        const selectedComps = state.selectedComponentIds
+          .map(id => components.find(c => c.id === id))
+          .filter(c => c)
+
+        // Calculate center of selection
+        const centerX = selectedComps.reduce((sum, c) => sum + c.x, 0) / selectedComps.length
+
+        // Snap center to nearest grid
+        const gridCenterX = snapToGrid(centerX)
+
+        selectedComps.forEach(comp => {
+          // Mirror position around vertical axis at gridCenterX
+          const newX = 2 * gridCenterX - comp.x
+
+          // Mirror rotation: horizontal flip means negate and flip the angle
+          const currentRotation = comp.rotation || 0
+          const newRotation = -currentRotation
+
+          updateComponent(comp.id, {
+            x: newX,
+            rotation: newRotation,
+            flipX: !comp.flipX
+          })
         })
       }
       // Flip single selected component (draw mode)
@@ -608,15 +642,31 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       // Get current state directly from store
       const state = useSchematicStore.getState()
 
-      // Flip multiple selected components vertically (selection mode)
+      // Flip multiple selected components vertically as a group (selection mode)
       if (state.selectedComponentIds.length > 0) {
-        state.selectedComponentIds.forEach(compId => {
-          const component = components.find(c => c.id === compId)
-          if (component) {
-            updateComponent(compId, {
-              flipY: !component.flipY
-            })
-          }
+        const selectedComps = state.selectedComponentIds
+          .map(id => components.find(c => c.id === id))
+          .filter(c => c)
+
+        // Calculate center of selection
+        const centerY = selectedComps.reduce((sum, c) => sum + c.y, 0) / selectedComps.length
+
+        // Snap center to nearest grid
+        const gridCenterY = snapToGrid(centerY)
+
+        selectedComps.forEach(comp => {
+          // Mirror position around horizontal axis at gridCenterY
+          const newY = 2 * gridCenterY - comp.y
+
+          // Mirror rotation: for horizontal axis flip, negate the rotation
+          const currentRotation = comp.rotation || 0
+          const newRotation = -currentRotation
+
+          updateComponent(comp.id, {
+            y: newY,
+            rotation: newRotation,
+            flipY: !comp.flipY
+          })
         })
       }
       // Flip single selected component (draw mode)
