@@ -778,13 +778,13 @@ export const componentLibrary = {
   transformer: {
     name: 'トランス',
     category: 'passive',
-    width: 80,
+    width: 60,
     height: 80,
     pins: [
       { id: 'p1', x: 0, y: -20, label: '1' },
       { id: 'p2', x: 0, y: 20, label: '2' },
-      { id: 's1', x: 80, y: -20, label: '3' },
-      { id: 's2', x: 80, y: 20, label: '4' }
+      { id: 's1', x: 60, y: -20, label: '3' },
+      { id: 's2', x: 60, y: 20, label: '4' }
     ],
     render: (ctx, selected) => {
       ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
@@ -794,28 +794,42 @@ export const componentLibrary = {
       ctx.beginPath()
       ctx.moveTo(0, -20)
       ctx.lineTo(15, -20)
+      ctx.stroke()
+
       for (let i = 0; i < 4; i++) {
+        ctx.beginPath()
         ctx.arc(15, -20 + 5 + i * 10, 5, -Math.PI / 2, Math.PI / 2, false)
+        ctx.stroke()
       }
+
+      ctx.beginPath()
+      ctx.moveTo(15, 20)
       ctx.lineTo(0, 20)
       ctx.stroke()
 
-      // Secondary coil (right)
+      // Secondary coil (right, moved 1 grid closer)
       ctx.beginPath()
-      ctx.moveTo(80, -20)
-      ctx.lineTo(65, -20)
-      for (let i = 0; i < 4; i++) {
-        ctx.arc(65, -20 + 5 + i * 10, 5, Math.PI / 2, -Math.PI / 2, false)
-      }
-      ctx.lineTo(80, 20)
+      ctx.moveTo(60, -20)
+      ctx.lineTo(45, -20)
       ctx.stroke()
 
-      // Core (two vertical lines)
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath()
+        ctx.arc(45, -20 + 5 + i * 10, 5, Math.PI / 2, -Math.PI / 2, false)
+        ctx.stroke()
+      }
+
       ctx.beginPath()
-      ctx.moveTo(35, -25)
-      ctx.lineTo(35, 25)
-      ctx.moveTo(45, -25)
-      ctx.lineTo(45, 25)
+      ctx.moveTo(45, 20)
+      ctx.lineTo(60, 20)
+      ctx.stroke()
+
+      // Core (two vertical lines narrower, within 1 grid)
+      ctx.beginPath()
+      ctx.moveTo(27, -25)
+      ctx.lineTo(27, 25)
+      ctx.moveTo(33, -25)
+      ctx.lineTo(33, 25)
       ctx.stroke()
     }
   }
