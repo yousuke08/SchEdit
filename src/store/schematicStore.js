@@ -10,6 +10,7 @@ const useSchematicStore = create((set) => ({
   wireColor: '#ffffff',
   wireThickness: 2,
   wireStyle: 'solid', // 'solid', 'double', 'dashed', 'dash-dot', 'wavy', 'double-wavy'
+  clipboard: { components: [], wires: [] },
 
   addWire: (wire) => set((state) => ({
     wires: [...state.wires, { ...wire, id: crypto.randomUUID() }]
@@ -63,7 +64,34 @@ const useSchematicStore = create((set) => ({
     selectedComponentIds: componentId && !state.selectedComponentIds.includes(componentId)
       ? [...state.selectedComponentIds, componentId]
       : state.selectedComponentIds
-  }))
+  })),
+
+  copyToClipboard: (components, wires) => set({
+    clipboard: { components, wires }
+  }),
+
+  pasteFromClipboard: () => set((state) => {
+    const newComponents = state.clipboard.components.map(comp => ({
+      ...comp,
+      id: crypto.randomUUID(),
+      x: comp.x + 20,
+      y: comp.y + 20
+    }))
+    const newWires = state.clipboard.wires.map(wire => ({
+      ...wire,
+      id: crypto.randomUUID(),
+      start: { x: wire.start.x + 20, y: wire.start.y + 20 },
+      end: { x: wire.end.x + 20, y: wire.end.y + 20 }
+    }))
+    return {
+      components: [...state.components, ...newComponents],
+      wires: [...state.wires, ...newWires],
+      selectedComponentIds: newComponents.map(c => c.id),
+      selectedWireIds: newWires.map(w => w.id),
+      selectedComponentId: null,
+      selectedWireId: null
+    }
+  })
 }))
 
 export default useSchematicStore

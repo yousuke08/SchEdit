@@ -42,7 +42,9 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     selectedWireIds,
     selectedComponentIds,
     setMultipleSelection,
-    clearSelection
+    clearSelection,
+    copyToClipboard,
+    pasteFromClipboard
   } = useSchematicStore()
 
   // Expose methods to parent component
@@ -572,6 +574,24 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       setSelectedComponent(null)
       setSelectionBox(null)
       clearSelection()
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+      e.preventDefault()
+      const state = useSchematicStore.getState()
+
+      // Copy selected components and wires
+      const selectedComps = state.selectedComponentIds
+        .map(id => components.find(c => c.id === id))
+        .filter(c => c)
+      const selectedWires = state.selectedWireIds
+        .map(id => wires.find(w => w.id === id))
+        .filter(w => w)
+
+      if (selectedComps.length > 0 || selectedWires.length > 0) {
+        copyToClipboard(selectedComps, selectedWires)
+      }
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+      e.preventDefault()
+      pasteFromClipboard()
     } else if (e.key === 'Delete' || e.key === 'Backspace') {
       e.preventDefault()
 
