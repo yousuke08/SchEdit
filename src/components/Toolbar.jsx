@@ -12,7 +12,7 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
   const [exportType, setExportType] = useState(null)
   const fileInputRef = useRef(null)
   const exportMenuRef = useRef(null)
-  const { wires, components, addWire, addComponent, editorMode, setEditorMode } = useSchematicStore()
+  const { wires, components, addWire, addComponent } = useSchematicStore()
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -123,22 +123,6 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
         style={{ display: 'none' }}
         onChange={handleFileChange}
       />
-      <div className="toolbar-section">
-        <button
-          onClick={() => setEditorMode('draw')}
-          className={editorMode === 'draw' ? 'active' : ''}
-          title="線描画モード"
-        >
-          ✏️
-        </button>
-        <button
-          onClick={() => setEditorMode('select')}
-          className={editorMode === 'select' ? 'active' : ''}
-          title="選択モード"
-        >
-          ↖️
-        </button>
-      </div>
       <div className="toolbar-section">
         <button onClick={handleNew} title="新規">新規</button>
         <button onClick={handleSave} title="保存">保存</button>

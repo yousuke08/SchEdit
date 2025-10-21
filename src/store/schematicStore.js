@@ -9,7 +9,6 @@ const useSchematicStore = create((set) => ({
   selectedComponentIds: [],
   wireColor: '#ffffff',
   wireThickness: 2,
-  editorMode: 'draw', // 'draw' or 'select'
 
   addWire: (wire) => set((state) => ({
     wires: [...state.wires, { ...wire, id: crypto.randomUUID() }]
@@ -46,8 +45,6 @@ const useSchematicStore = create((set) => ({
   setSelectedComponent: (id) => set({ selectedComponentId: id, selectedWireId: null }),
 
   clearSelection: () => set({ selectedWireId: null, selectedComponentId: null, selectedWireIds: [], selectedComponentIds: [] }),
-
-  setEditorMode: (mode) => set({ editorMode: mode }),
 
   setMultipleSelection: (wireIds, componentIds) => set({
     selectedWireIds: wireIds,
