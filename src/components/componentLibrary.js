@@ -267,6 +267,58 @@ export const componentLibrary = {
     }
   },
 
+  bjt_npn: {
+    name: 'NPN トランジスタ',
+    category: 'semiconductor',
+    width: 80,
+    height: 40,
+    pins: [
+      { id: 'base', x: -40, y: 0, label: 'B' },
+      { id: 'collector', x: 0, y: -40, label: 'C' },
+      { id: 'emitter', x: 0, y: 40, label: 'E' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.fillStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Base terminal
+      ctx.beginPath()
+      ctx.moveTo(-40, 0)
+      ctx.lineTo(-20, 0)
+      ctx.stroke()
+
+      // Base line (vertical)
+      ctx.beginPath()
+      ctx.moveTo(-20, -20)
+      ctx.lineTo(-20, 20)
+      ctx.stroke()
+
+      // Collector connection
+      ctx.beginPath()
+      ctx.moveTo(-20, -14)
+      ctx.lineTo(0, -30)
+      ctx.lineTo(0, -40)
+      ctx.stroke()
+
+      // Emitter connection
+      ctx.beginPath()
+      ctx.moveTo(-20, 14)
+      ctx.lineTo(0, 30)
+      ctx.lineTo(0, 40)
+      ctx.stroke()
+
+      // Emitter arrow (pointing outward for NPN)
+      // Rotated 15 degrees clockwise around (0, 30)
+      ctx.beginPath()
+      ctx.moveTo(1, 30)
+      ctx.lineTo(-11.44, 26.09)
+      ctx.lineTo(-4.68, 20.67)
+      ctx.closePath()
+      ctx.fill()
+    }
+  },
+
   capacitor_electrolytic: {
     name: '電解コンデンサ',
     category: 'passive',

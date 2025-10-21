@@ -7,7 +7,7 @@ function ComponentPalette() {
 
   const categories = {
     passive: { name: '受動部品', components: ['resistor', 'resistor_us', 'capacitor', 'capacitor_electrolytic', 'inductor', 'inductor_coil', 'transformer'] },
-    semiconductor: { name: '半導体', components: [] },
+    semiconductor: { name: '半導体', components: ['bjt_npn'] },
     source: { name: '電源', components: ['voltage_source', 'current_source'] },
     symbol: { name: '記号', components: ['gnd'] }
   }
