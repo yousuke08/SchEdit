@@ -8,8 +8,10 @@ function PropertiesPanel() {
     wires,
     wireColor,
     wireThickness,
+    wireStyle,
     setWireColor,
     setWireThickness,
+    setWireStyle,
     updateWire
   } = useSchematicStore()
 
@@ -17,16 +19,19 @@ function PropertiesPanel() {
 
   const [localColor, setLocalColor] = useState(wireColor)
   const [localThickness, setLocalThickness] = useState(wireThickness)
+  const [localStyle, setLocalStyle] = useState(wireStyle)
 
   useEffect(() => {
     if (selectedWire) {
       setLocalColor(selectedWire.color)
       setLocalThickness(selectedWire.thickness)
+      setLocalStyle(selectedWire.style || 'solid')
     } else {
       setLocalColor(wireColor)
       setLocalThickness(wireThickness)
+      setLocalStyle(wireStyle)
     }
-  }, [selectedWire, wireColor, wireThickness])
+  }, [selectedWire, wireColor, wireThickness, wireStyle])
 
   const handleColorChange = (color) => {
     setLocalColor(color)
@@ -44,6 +49,15 @@ function PropertiesPanel() {
       updateWire(selectedWire.id, { thickness: value })
     } else {
       setWireThickness(value)
+    }
+  }
+
+  const handleStyleChange = (style) => {
+    setLocalStyle(style)
+    if (selectedWire) {
+      updateWire(selectedWire.id, { style })
+    } else {
+      setWireStyle(style)
     }
   }
 
@@ -78,6 +92,17 @@ function PropertiesPanel() {
             />
             <span>{localThickness}px</span>
           </div>
+          <div className="property-item">
+            <label>線種:</label>
+            <select value={localStyle} onChange={(e) => handleStyleChange(e.target.value)}>
+              <option value="solid">実線</option>
+              <option value="double">二重線</option>
+              <option value="dashed">点線</option>
+              <option value="dash-dot">1点鎖線</option>
+              <option value="wavy">波線</option>
+              <option value="double-wavy">2重波線</option>
+            </select>
+          </div>
         </div>
       </div>
     )
@@ -108,6 +133,17 @@ function PropertiesPanel() {
           <button className="reset-button" onClick={handleResetThickness} title="デフォルトに戻す">
             ↺
           </button>
+        </div>
+        <div className="property-item">
+          <label>線種:</label>
+          <select value={localStyle} onChange={(e) => handleStyleChange(e.target.value)}>
+            <option value="solid">実線</option>
+            <option value="double">二重線</option>
+            <option value="dashed">点線</option>
+            <option value="dash-dot">1点鎖線</option>
+            <option value="wavy">波線</option>
+            <option value="double-wavy">2重波線</option>
+          </select>
         </div>
         <div className="property-info">
           <p>開始点: ({selectedWire.start.x}, {selectedWire.start.y})</p>

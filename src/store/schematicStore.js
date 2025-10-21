@@ -9,6 +9,7 @@ const useSchematicStore = create((set) => ({
   selectedComponentIds: [],
   wireColor: '#ffffff',
   wireThickness: 2,
+  wireStyle: 'solid', // 'solid', 'double', 'dashed', 'dash-dot', 'wavy', 'double-wavy'
 
   addWire: (wire) => set((state) => ({
     wires: [...state.wires, { ...wire, id: crypto.randomUUID() }]
@@ -28,6 +29,8 @@ const useSchematicStore = create((set) => ({
   setWireColor: (color) => set({ wireColor: color }),
 
   setWireThickness: (thickness) => set({ wireThickness: thickness }),
+
+  setWireStyle: (style) => set({ wireStyle: style }),
 
   addComponent: (component) => set((state) => ({
     components: [...state.components, { ...component, id: crypto.randomUUID() }]

@@ -40,6 +40,27 @@
   min-width: 0;
 }
 
+.property-item select {
+  flex: 1;
+  padding: 4px 8px;
+  background-color: #333;
+  color: #ccc;
+  border: 1px solid #555;
+  border-radius: 3px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.property-item select:hover {
+  background-color: #444;
+  border-color: #666;
+}
+
+.property-item select:focus {
+  outline: none;
+  border-color: #777;
+}
+
 .property-item span {
   min-width: 35px;
   font-size: 12px;

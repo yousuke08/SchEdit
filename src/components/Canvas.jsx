@@ -32,6 +32,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     updateWire,
     wireColor,
     wireThickness,
+    wireStyle,
     components,
     addComponent,
     selectedComponentId,
@@ -124,11 +125,109 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       ctx.strokeStyle = isSelected ? '#ffff00' : wire.color
       ctx.lineWidth = wire.thickness
       ctx.lineCap = 'round'
+      const wireStyle = wire.style || 'solid'
 
-      ctx.beginPath()
-      ctx.moveTo(wire.start.x, wire.start.y)
-      ctx.lineTo(wire.end.x, wire.end.y)
-      ctx.stroke()
+      const drawWireWithStyle = (start, end, style) => {
+        const dx = end.x - start.x
+        const dy = end.y - start.y
+        const length = Math.sqrt(dx * dx + dy * dy)
+        const angle = Math.atan2(dy, dx)
+
+        ctx.save()
+        ctx.translate(start.x, start.y)
+        ctx.rotate(angle)
+
+        switch (style) {
+          case 'solid':
+            ctx.beginPath()
+            ctx.moveTo(0, 0)
+            ctx.lineTo(length, 0)
+            ctx.stroke()
+            break
+
+          case 'double':
+            const offset = wire.thickness * 1
+            ctx.beginPath()
+            ctx.moveTo(0, -offset)
+            ctx.lineTo(length, -offset)
+            ctx.stroke()
+            ctx.beginPath()
+            ctx.moveTo(0, offset)
+            ctx.lineTo(length, offset)
+            ctx.stroke()
+            break
+
+          case 'dashed':
+            ctx.setLineDash([10, 5])
+            ctx.beginPath()
+            ctx.moveTo(0, 0)
+            ctx.lineTo(length, 0)
+            ctx.stroke()
+            ctx.setLineDash([])
+            break
+
+          case 'dash-dot':
+            ctx.setLineDash([15, 5, 3, 5])
+            ctx.beginPath()
+            ctx.moveTo(0, 0)
+            ctx.lineTo(length, 0)
+            ctx.stroke()
+            ctx.setLineDash([])
+            break
+
+          case 'wavy':
+            ctx.beginPath()
+            const waveLength = 15
+            const waveHeight = 4
+            const steps = Math.ceil(length / (waveLength / 4))
+            for (let i = 0; i <= steps; i++) {
+              const x = (i / steps) * length
+              const y = Math.sin((i / steps) * (length / waveLength) * Math.PI * 2) * waveHeight
+              if (i === 0) {
+                ctx.moveTo(x, y)
+              } else {
+                ctx.lineTo(x, y)
+              }
+            }
+            ctx.stroke()
+            break
+
+          case 'double-wavy':
+            const waveOffset = wire.thickness * 1
+            const waveLen = 15
+            const waveHt = 4
+            const stepsDouble = Math.ceil(length / (waveLen / 4))
+
+            ctx.beginPath()
+            for (let i = 0; i <= stepsDouble; i++) {
+              const x = (i / stepsDouble) * length
+              const y = Math.sin((i / stepsDouble) * (length / waveLen) * Math.PI * 2) * waveHt - waveOffset
+              if (i === 0) {
+                ctx.moveTo(x, y)
+              } else {
+                ctx.lineTo(x, y)
+              }
+            }
+            ctx.stroke()
+
+            ctx.beginPath()
+            for (let i = 0; i <= stepsDouble; i++) {
+              const x = (i / stepsDouble) * length
+              const y = Math.sin((i / stepsDouble) * (length / waveLen) * Math.PI * 2) * waveHt + waveOffset
+              if (i === 0) {
+                ctx.moveTo(x, y)
+              } else {
+                ctx.lineTo(x, y)
+              }
+            }
+            ctx.stroke()
+            break
+        }
+
+        ctx.restore()
+      }
+
+      drawWireWithStyle(wire.start, wire.end, wireStyle)
 
       // Draw endpoints
       if (isSelected) {
@@ -233,7 +332,8 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
               start: drawingWire,
               end: snappedPos,
               color: wireColor,
-              thickness: wireThickness
+              thickness: wireThickness,
+              style: wireStyle
             })
           }
         }
