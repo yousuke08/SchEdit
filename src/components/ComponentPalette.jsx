@@ -7,7 +7,7 @@ function ComponentPalette() {
 
   const categories = {
     passive: { name: '受動部品', components: ['resistor', 'resistor_us', 'capacitor', 'capacitor_electrolytic', 'inductor', 'inductor_coil', 'transformer'] },
-    semiconductor: { name: '半導体', components: ['diode', 'diode_schottky', 'diode_zener', 'bjt_npn', 'bjt_pnp', 'mosfet_n', 'mosfet_p', 'mosfet_n_diode'] },
+    semiconductor: { name: '半導体', components: [] },
     source: { name: '電源', components: ['voltage_source', 'current_source'] },
     symbol: { name: '記号', components: ['gnd'] }
   }
@@ -40,16 +40,36 @@ function ComponentPalette() {
                 >
                   <canvas
                     ref={(canvas) => {
-                      if (canvas) {
+                      if (canvas && component) {
                         const ctx = canvas.getContext('2d')
                         canvas.width = 80
                         canvas.height = 60
                         ctx.clearRect(0, 0, 80, 60)
                         ctx.save()
-                        ctx.translate(40, 30)
-                        ctx.scale(0.8, 0.8)
-                        // Center the component by offsetting by half its width and height
-                        ctx.translate(-component.width / 2, -component.height / 2)
+
+                        // Calculate bounding box from pins
+                        const pins = component.pins || []
+                        if (pins.length > 0) {
+                          const xs = pins.map(p => p.x)
+                          const ys = pins.map(p => p.y)
+                          const minX = Math.min(...xs)
+                          const maxX = Math.max(...xs)
+                          const minY = Math.min(...ys)
+                          const maxY = Math.max(...ys)
+                          const centerX = (minX + maxX) / 2
+                          const centerY = (minY + maxY) / 2
+
+                          // Center on canvas
+                          ctx.translate(40, 30)
+                          ctx.scale(0.8, 0.8)
+                          ctx.translate(-centerX, -centerY)
+                        } else {
+                          // Fallback: use component width/height
+                          ctx.translate(40, 30)
+                          ctx.scale(0.8, 0.8)
+                          ctx.translate(-component.width / 2, -component.height / 2)
+                        }
+
                         component.render(ctx, false)
                         ctx.restore()
                       }
