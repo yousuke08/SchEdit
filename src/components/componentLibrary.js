@@ -500,6 +500,188 @@ export const componentLibrary = {
     }
   },
 
+  mosfet_p: {
+    name: 'PチャネルMOSFET',
+    category: 'semiconductor',
+    width: 80,
+    height: 40,
+    pins: [
+      { id: 'gate', x: -40, y: 0, label: 'G' },
+      { id: 'drain', x: 0, y: 40, label: 'D' },
+      { id: 'source', x: 0, y: -40, label: 'S' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.fillStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Gate terminal
+      ctx.beginPath()
+      ctx.moveTo(-40, -20)
+      ctx.lineTo(-22.5, -20)
+      ctx.stroke()
+
+      // Gate line (vertical)
+      ctx.beginPath()
+      ctx.moveTo(-22.5, -20)
+      ctx.lineTo(-22.5, 20)
+      ctx.stroke()
+
+      // Channel line (vertical, 3 segments)
+      ctx.beginPath()
+      ctx.moveTo(-15, -20)
+      ctx.lineTo(-15, -10)
+      ctx.stroke()
+
+      ctx.beginPath()
+      ctx.moveTo(-15, -5)
+      ctx.lineTo(-15, 5)
+      ctx.stroke()
+
+      ctx.beginPath()
+      ctx.moveTo(-15, 10)
+      ctx.lineTo(-15, 20)
+      ctx.stroke()
+
+      // Source connection (top for P-channel)
+      ctx.beginPath()
+      ctx.moveTo(-15, -15)
+      ctx.lineTo(0, -15)
+      ctx.lineTo(0, -40)
+      ctx.stroke()
+
+      // Back Gate connection
+      ctx.beginPath()
+      ctx.moveTo(-15, 0)
+      ctx.lineTo(0, 0)
+      ctx.lineTo(0, -15)
+      ctx.stroke()
+
+      // Drain connection (bottom for P-channel)
+      ctx.beginPath()
+      ctx.moveTo(-15, 15)
+      ctx.lineTo(0, 15)
+      ctx.lineTo(0, 40)
+      ctx.stroke()
+
+      // Gate arrow (pointing left for P-channel)
+      ctx.beginPath()
+      ctx.moveTo(0, 0)
+      ctx.lineTo(-10, -4)
+      ctx.lineTo(-10, 4)
+      ctx.closePath()
+      ctx.fill()
+    }
+  },
+
+  mosfet_p_diode: {
+    name: 'PチャネルMOSFET (ボディダイオード付)',
+    category: 'semiconductor',
+    width: 80,
+    height: 40,
+    pins: [
+      { id: 'gate', x: -40, y: -20, label: 'G' },
+      { id: 'drain', x: 0, y: 40, label: 'D' },
+      { id: 'source', x: 0, y: -40, label: 'S' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.fillStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Gate terminal
+      ctx.beginPath()
+      ctx.moveTo(-40, -20)
+      ctx.lineTo(-22.5, -20)
+      ctx.stroke()
+
+      // Gate line (vertical)
+      ctx.beginPath()
+      ctx.moveTo(-22.5, -20)
+      ctx.lineTo(-22.5, 20)
+      ctx.stroke()
+
+      // Channel line (vertical, 3 segments)
+      ctx.beginPath()
+      ctx.moveTo(-15, -20)
+      ctx.lineTo(-15, -10)
+      ctx.stroke()
+
+      ctx.beginPath()
+      ctx.moveTo(-15, -5)
+      ctx.lineTo(-15, 5)
+      ctx.stroke()
+
+      ctx.beginPath()
+      ctx.moveTo(-15, 10)
+      ctx.lineTo(-15, 20)
+      ctx.stroke()
+
+      // Source connection (top for P-channel)
+      ctx.beginPath()
+      ctx.moveTo(-15, -15)
+      ctx.lineTo(0, -15)
+      ctx.lineTo(0, -40)
+      ctx.stroke()
+
+      // Back Gate connection
+      ctx.beginPath()
+      ctx.moveTo(-15, 0)
+      ctx.lineTo(0, 0)
+      ctx.lineTo(0, -15)
+      ctx.stroke()
+
+      // Drain connection (bottom for P-channel)
+      ctx.beginPath()
+      ctx.moveTo(-15, 15)
+      ctx.lineTo(0, 15)
+      ctx.lineTo(0, 40)
+      ctx.stroke()
+
+      // Gate arrow (pointing left for P-channel)
+      ctx.beginPath()
+      ctx.moveTo(0, 0)
+      ctx.lineTo(-10, -4)
+      ctx.lineTo(-10, 4)
+      ctx.closePath()
+      ctx.fill()
+
+      // Body diode (cathode at source side, anode at drain side)
+      // Cathode line (top)
+      ctx.beginPath()
+      ctx.moveTo(5, -5)
+      ctx.lineTo(20, -5)
+      ctx.stroke()
+
+      // Triangle pointing down (anode to cathode)
+      ctx.beginPath()
+      ctx.moveTo(12.5, -5)
+      ctx.lineTo(5, 5)
+      ctx.lineTo(20, 5)
+      ctx.closePath()
+      ctx.fill()
+
+      // Anode line (bottom)
+      ctx.beginPath()
+      ctx.moveTo(12.5, -5)
+      ctx.lineTo(12.5, -20)
+      ctx.lineTo(0, -20)
+      ctx.stroke()
+
+      // Diode connections to source/drain
+      ctx.beginPath()
+      ctx.moveTo(12.5, -5)
+      ctx.lineTo(12.5, 15)
+      ctx.stroke()
+
+      ctx.beginPath()
+      ctx.moveTo(12.5, 5)
+      ctx.lineTo(12.5, 20)
+      ctx.lineTo(0, 20)
+      ctx.stroke()
+    }
+  },
+
   bjt_pnp: {
     name: 'PNP トランジスタ',
     category: 'semiconductor',
