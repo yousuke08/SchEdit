@@ -122,7 +122,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     wires.forEach(wire => {
       const isSelected = wire.id === selectedWireId || selectedWireIds.includes(wire.id)
       ctx.strokeStyle = isSelected ? '#ffff00' : wire.color
-      ctx.lineWidth = wire.thickness / zoom
+      ctx.lineWidth = wire.thickness
       ctx.lineCap = 'round'
 
       ctx.beginPath()
@@ -133,7 +133,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       // Draw endpoints
       if (isSelected) {
         ctx.fillStyle = '#ffff00'
-        const pointRadius = 4 / zoom
+        const pointRadius = 4
         ctx.beginPath()
         ctx.arc(wire.start.x, wire.start.y, pointRadius, 0, Math.PI * 2)
         ctx.fill()
@@ -174,9 +174,9 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       const snappedPos = { x: snapToGrid(worldPos.x), y: snapToGrid(worldPos.y) }
 
       ctx.strokeStyle = wireColor
-      ctx.lineWidth = wireThickness / zoom
+      ctx.lineWidth = wireThickness
       ctx.lineCap = 'round'
-      ctx.setLineDash([5 / zoom, 5 / zoom])
+      ctx.setLineDash([5, 5])
 
       ctx.beginPath()
       ctx.moveTo(drawingWire.x, drawingWire.y)

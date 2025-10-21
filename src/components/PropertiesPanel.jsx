@@ -47,6 +47,13 @@ function PropertiesPanel() {
     }
   }
 
+  const handleResetThickness = () => {
+    if (selectedWire) {
+      updateWire(selectedWire.id, { thickness: wireThickness })
+      setLocalThickness(wireThickness)
+    }
+  }
+
   if (!selectedWire) {
     return (
       <div className="properties-panel">
@@ -72,7 +79,6 @@ function PropertiesPanel() {
             <span>{localThickness}px</span>
           </div>
         </div>
-        <p className="hint">配線を選択すると、個別の設定が可能です</p>
       </div>
     )
   }
@@ -99,6 +105,9 @@ function PropertiesPanel() {
             onChange={(e) => handleThicknessChange(e.target.value)}
           />
           <span>{localThickness}px</span>
+          <button className="reset-button" onClick={handleResetThickness} title="デフォルトに戻す">
+            ↺
+          </button>
         </div>
         <div className="property-info">
           <p>開始点: ({selectedWire.start.x}, {selectedWire.start.y})</p>

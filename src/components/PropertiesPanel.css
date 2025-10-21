@@ -16,13 +16,14 @@
 .property-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 12px;
 }
 
 .property-item label {
-  min-width: 50px;
+  min-width: 40px;
   font-size: 13px;
+  flex-shrink: 0;
 }
 
 .property-item input[type="color"] {
@@ -36,12 +37,34 @@
 
 .property-item input[type="range"] {
   flex: 1;
+  min-width: 0;
 }
 
 .property-item span {
-  min-width: 40px;
-  font-size: 13px;
+  min-width: 35px;
+  font-size: 12px;
   text-align: right;
+  flex-shrink: 0;
+}
+
+.property-item .reset-button {
+  padding: 2px 8px;
+  font-size: 14px;
+  background-color: #444;
+  color: #ccc;
+  border: 1px solid #555;
+  border-radius: 3px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.property-item .reset-button:hover {
+  background-color: #555;
+  color: #fff;
+}
+
+.property-item .reset-button:active {
+  background-color: #333;
 }
 
 .property-info {
