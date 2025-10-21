@@ -22,6 +22,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
   const [selectionDragStart, setSelectionDragStart] = useState(null)
   const [lastClickTime, setLastClickTime] = useState(0)
   const [lastClickPos, setLastClickPos] = useState(null)
+  const [draggingWireEnd, setDraggingWireEnd] = useState(null) // { wireId, endpoint: 'start' | 'end' }
 
   const {
     wires,
@@ -389,6 +390,59 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         return
       }
 
+      // Check if clicking on wire endpoint first
+      const endpointThreshold = 8
+      let clickedEndpoint = null
+
+      // First check selected wires (higher priority)
+      const selectedWires = wires.filter(w => selectedWireIds.includes(w.id) || w.id === selectedWireId)
+      for (const wire of selectedWires) {
+        const distToStart = Math.sqrt(
+          Math.pow(worldPos.x - wire.start.x, 2) + Math.pow(worldPos.y - wire.start.y, 2)
+        )
+        const distToEnd = Math.sqrt(
+          Math.pow(worldPos.x - wire.end.x, 2) + Math.pow(worldPos.y - wire.end.y, 2)
+        )
+
+        if (distToStart < endpointThreshold) {
+          clickedEndpoint = { wireId: wire.id, endpoint: 'start' }
+          break
+        } else if (distToEnd < endpointThreshold) {
+          clickedEndpoint = { wireId: wire.id, endpoint: 'end' }
+          break
+        }
+      }
+
+      // If no selected wire endpoint found, check all wires
+      if (!clickedEndpoint) {
+        for (const wire of wires) {
+          // Skip already checked selected wires
+          if (selectedWireIds.includes(wire.id) || wire.id === selectedWireId) continue
+
+          const distToStart = Math.sqrt(
+            Math.pow(worldPos.x - wire.start.x, 2) + Math.pow(worldPos.y - wire.start.y, 2)
+          )
+          const distToEnd = Math.sqrt(
+            Math.pow(worldPos.x - wire.end.x, 2) + Math.pow(worldPos.y - wire.end.y, 2)
+          )
+
+          if (distToStart < endpointThreshold) {
+            clickedEndpoint = { wireId: wire.id, endpoint: 'start' }
+            break
+          } else if (distToEnd < endpointThreshold) {
+            clickedEndpoint = { wireId: wire.id, endpoint: 'end' }
+            break
+          }
+        }
+      }
+
+      if (clickedEndpoint) {
+        // Start dragging wire endpoint
+        setDraggingWireEnd(clickedEndpoint)
+        setSelectedWire(clickedEndpoint.wireId)
+        return
+      }
+
       // Check if clicking on wire
       const clickThreshold = 10 / zoom
       let clickedWire = null
@@ -435,6 +489,23 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
 
     if (drawingWire) {
       setCurrentMousePos({ x: e.clientX, y: e.clientY })
+    }
+
+    // Dragging wire endpoint
+    if (draggingWireEnd) {
+      const snappedPos = { x: snapToGrid(worldPos.x), y: snapToGrid(worldPos.y) }
+      const wire = wires.find(w => w.id === draggingWireEnd.wireId)
+      if (wire) {
+        if (draggingWireEnd.endpoint === 'start') {
+          updateWire(draggingWireEnd.wireId, {
+            start: snappedPos
+          })
+        } else {
+          updateWire(draggingWireEnd.wireId, {
+            end: snappedPos
+          })
+        }
+      }
     }
 
     // Selection box dragging
@@ -525,6 +596,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
 
     setDraggingSelection(false)
     setSelectionDragStart(null)
+    setDraggingWireEnd(null)
 
     // Finish selection box
     if (selectionBox) {
