@@ -318,6 +318,57 @@ export const componentLibrary = {
     }
   },
 
+  bjt_pnp: {
+    name: 'PNP トランジスタ',
+    category: 'semiconductor',
+    width: 80,
+    height: 40,
+    pins: [
+      { id: 'base', x: -40, y: 0, label: 'B' },
+      { id: 'collector', x: 0, y: 40, label: 'C' },
+      { id: 'emitter', x: 0, y: -40, label: 'E' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.fillStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Base terminal
+      ctx.beginPath()
+      ctx.moveTo(-40, 0)
+      ctx.lineTo(-20, 0)
+      ctx.stroke()
+
+      // Base line (vertical)
+      ctx.beginPath()
+      ctx.moveTo(-20, -20)
+      ctx.lineTo(-20, 20)
+      ctx.stroke()
+
+      // Emitter connection (top for PNP)
+      ctx.beginPath()
+      ctx.moveTo(-20, -10)
+      ctx.lineTo(0, -25)
+      ctx.lineTo(0, -40)
+      ctx.stroke()
+
+      // Collector connection (bottom for PNP)
+      ctx.beginPath()
+      ctx.moveTo(-20, 10)
+      ctx.lineTo(0, 25)
+      ctx.lineTo(0, 40)
+      ctx.stroke()
+
+      // Base arrow (pointing inward for PNP)
+      ctx.beginPath()
+      ctx.moveTo(-20, -10)
+      ctx.lineTo(-8.56, -14.91)
+      ctx.lineTo(-15.32, -20.33)
+      ctx.closePath()
+      ctx.fill()
+    }
+  },
+
   capacitor_electrolytic: {
     name: '電解コンデンサ',
     category: 'passive',
