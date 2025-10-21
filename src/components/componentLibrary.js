@@ -411,6 +411,94 @@ export const componentLibrary = {
     }
   },
 
+  diode_zener: {
+    name: 'ツェナーダイオード',
+    category: 'semiconductor',
+    width: 40,
+    height: 20,
+    pins: [
+      { id: 'cathode', x: 0, y: -20, label: 'K' },
+      { id: 'anode', x: 0, y: 20, label: 'A' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.fillStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Cathode wire
+      ctx.beginPath()
+      ctx.moveTo(0, -20)
+      ctx.lineTo(0, -6)
+      ctx.stroke()
+
+      // Cathode line with Z shape
+      ctx.beginPath()
+      ctx.moveTo(-7.5, -10)
+      ctx.lineTo(-7.5, -6)
+      ctx.lineTo(7.5, -6)
+      ctx.lineTo(7.5, -2)
+      ctx.stroke()
+
+      // Triangle (anode side pointing down)
+      ctx.beginPath()
+      ctx.moveTo(-7.5, 6)
+      ctx.lineTo(7.5, 6)
+      ctx.lineTo(0, -6)
+      ctx.closePath()
+      ctx.fill()
+
+      // Anode wire
+      ctx.beginPath()
+      ctx.moveTo(0, 6)
+      ctx.lineTo(0, 20)
+      ctx.stroke()
+    }
+  },
+
+  diode_schottky: {
+    name: 'ショットキーバリアダイオード',
+    category: 'semiconductor',
+    width: 40,
+    height: 20,
+    pins: [
+      { id: 'cathode', x: 0, y: -20, label: 'K' },
+      { id: 'anode', x: 0, y: 20, label: 'A' }
+    ],
+    render: (ctx, selected) => {
+      ctx.strokeStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.fillStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.lineWidth = 2
+
+      // Cathode wire
+      ctx.beginPath()
+      ctx.moveTo(0, -20)
+      ctx.lineTo(0, -6)
+      ctx.stroke()
+
+      // Cathode line with S shape
+      ctx.beginPath()
+      ctx.moveTo(-7.5, -2)
+      ctx.lineTo(-7.5, -6)
+      ctx.lineTo(7.5, -6)
+      ctx.lineTo(7.5, -10)
+      ctx.stroke()
+
+      // Triangle (anode side pointing down)
+      ctx.beginPath()
+      ctx.moveTo(-7.5, 6)
+      ctx.lineTo(7.5, 6)
+      ctx.lineTo(0, -6)
+      ctx.closePath()
+      ctx.fill()
+
+      // Anode wire
+      ctx.beginPath()
+      ctx.moveTo(0, 6)
+      ctx.lineTo(0, 20)
+      ctx.stroke()
+    }
+  },
+
   capacitor_electrolytic: {
     name: '電解コンデンサ',
     category: 'passive',
