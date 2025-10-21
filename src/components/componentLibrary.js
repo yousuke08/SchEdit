@@ -296,24 +296,23 @@ export const componentLibrary = {
 
       // Collector connection
       ctx.beginPath()
-      ctx.moveTo(-20, -14)
-      ctx.lineTo(0, -30)
+      ctx.moveTo(-20, -10)
+      ctx.lineTo(0, -25)
       ctx.lineTo(0, -40)
       ctx.stroke()
 
       // Emitter connection
       ctx.beginPath()
-      ctx.moveTo(-20, 14)
-      ctx.lineTo(0, 30)
+      ctx.moveTo(-20, 10)
+      ctx.lineTo(0, 25)
       ctx.lineTo(0, 40)
       ctx.stroke()
 
       // Emitter arrow (pointing outward for NPN)
-      // Rotated 15 degrees clockwise around (0, 30)
       ctx.beginPath()
-      ctx.moveTo(1, 30)
-      ctx.lineTo(-11.44, 26.09)
-      ctx.lineTo(-4.68, 20.67)
+      ctx.moveTo(1, 25)
+      ctx.lineTo(-11.44, 21.09)
+      ctx.lineTo(-4.68, 15.67)
       ctx.closePath()
       ctx.fill()
     }
