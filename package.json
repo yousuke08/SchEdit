@@ -39,6 +39,7 @@
     "appId": "com.schedit.app",
     "productName": "SchEdit",
     "asar": false,
+    "publish": null,
     "directories": {
       "output": "dist-electron"
     },
