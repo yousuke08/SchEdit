@@ -966,6 +966,22 @@ export const componentLibrary = {
       ctx.lineTo(33, 25)
       ctx.stroke()
     }
+  },
+
+  junction: {
+    name: '接続点',
+    category: 'other',
+    width: 10,
+    height: 10,
+    pins: [
+      { id: 'center', x: 0, y: 0, label: '' }
+    ],
+    render: (ctx, selected) => {
+      ctx.fillStyle = selected ? '#ffff00' : '#ffffff'
+      ctx.beginPath()
+      ctx.arc(0, 0, 4, 0, Math.PI * 2)
+      ctx.fill()
+    }
   }
 }
 

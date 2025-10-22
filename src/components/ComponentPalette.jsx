@@ -9,7 +9,8 @@ function ComponentPalette() {
     passive: { name: '受動部品', components: ['resistor', 'resistor_us', 'capacitor', 'capacitor_electrolytic', 'inductor', 'inductor_coil', 'transformer'] },
     semiconductor: { name: '半導体', components: ['bjt_npn', 'bjt_pnp', 'mosfet_n', 'mosfet_n_diode', 'mosfet_p', 'mosfet_p_diode', 'diode', 'diode_zener', 'diode_schottky'] },
     source: { name: '電源', components: ['voltage_source', 'current_source'] },
-    symbol: { name: '記号', components: ['gnd'] }
+    symbol: { name: '記号', components: ['gnd'] },
+    other: { name: 'その他', components: ['junction'] }
   }
 
   const handleDragStart = (e, type) => {
