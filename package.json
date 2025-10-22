@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "npm run build && electron-builder --mac"
+    "electron:build": "npm run build && electron-builder",
+    "electron:build:mac": "npm run build && electron-builder --mac",
+    "electron:build:win": "npm run build && electron-builder --win"
   },
   "dependencies": {
     "react": "^19.1.1",
@@ -48,6 +50,10 @@
       "target": "dmg",
       "icon": "build/icon.icns",
       "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
     }
   }
 }
