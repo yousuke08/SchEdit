@@ -40,26 +40,53 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Rename Mac zip
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd dist-electron
+          mv SchEdit-*.zip SchEdit-mac.zip
+
+      - name: Rename Windows zip
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd dist-electron
+          mv SchEdit-*.zip SchEdit-win.zip
+
       - name: Upload Mac artifacts
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v4
         with:
           name: mac-build
-          path: dist-electron/*.dmg
+          path: dist-electron/SchEdit-mac.zip
 
       - name: Upload Windows artifacts
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: dist-electron/*.exe
+          path: dist-electron/SchEdit-win.zip
 
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            dist-electron/*.dmg
-            dist-electron/*.exe
+            dist-electron/SchEdit-mac.zip
+            dist-electron/SchEdit-win.zip
+          body: |
+            ## SchEdit v${{ github.ref_name }}
+
+            ### インストール方法
+
+            **Mac:**
+            1. `SchEdit-mac.zip` をダウンロード
+            2. zipファイルを解凍
+            3. `SchEdit.app` をアプリケーションフォルダにコピー
+
+            **Windows:**
+            1. `SchEdit-win.zip` をダウンロード
+            2. zipファイルを右クリック → プロパティ → 「ブロックの解除」にチェック → OK
+            3. zipファイルを解凍
+            4. `SchEdit.exe` を実行
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

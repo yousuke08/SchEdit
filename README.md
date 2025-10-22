@@ -1,16 +1,71 @@
-# React + Vite
+# SchEdit
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+電子回路図エディタ - Electron + React + Vite
 
-Currently, two official plugins are available:
+## ダウンロード
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+[Releases](https://github.com/yousuke08/SchEdit/releases)から最新版をダウンロードしてください。
 
-## React Compiler
+### インストール方法
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+#### Mac
+1. `SchEdit-mac.zip` をダウンロード
+2. zipファイルを解凍
+3. `SchEdit.app` をアプリケーションフォルダにコピー
+4. 初回起動時に「開発元を確認できません」と表示された場合：
+   - アプリを右クリック → 「開く」を選択
+   - または、システム環境設定 → セキュリティとプライバシー → 「このまま開く」
 
-## Expanding the ESLint configuration
+#### Windows
+1. `SchEdit-win.zip` をダウンロード
+2. zipファイルを右クリック → プロパティ → 「ブロックの解除」にチェック → OK
+3. zipファイルを解凍
+4. `SchEdit.exe` を実行
+5. Windows Defenderの警告が表示された場合：
+   - 「詳細情報」→「実行」をクリック
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 開発
+
+### 必要要件
+- Node.js 20以上
+- npm
+
+### セットアップ
+```bash
+npm install
+```
+
+### 開発サーバー起動
+```bash
+npm run dev
+```
+ブラウザで http://localhost:5173 を開いてください。
+
+### ビルド
+
+#### Mac用
+```bash
+npm run electron:build:mac
+```
+
+#### Windows用
+```bash
+npm run electron:build:win
+```
+
+ビルド成果物は `dist-electron/` フォルダに生成されます。
+
+## 機能
+
+- 回路図の作成・編集
+- 部品ライブラリ（抵抗、コンデンサ、トランジスタ、MOSFETなど）
+- 配線の描画（複数のスタイル対応）
+- SVG/PNG形式でのエクスポート
+- JSON形式でのプロジェクト保存/読込
+- コピー＆ペースト
+- グリッド表示
+- ズーム・パン機能
+
+## ライセンス
+
+MIT
