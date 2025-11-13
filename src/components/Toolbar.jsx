@@ -89,9 +89,9 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
     setShowExportMenu(false)
   }
 
-  const handleExportWithOptions = (options) => {
+  const handleExportWithOptions = async (options) => {
     if (exportType === 'svg') {
-      exportToSVG(wires, components, getComponentByType, options)
+      await exportToSVG(wires, components, getComponentByType, options)
     } else if (exportType === 'png') {
       exportToPNG(wires, components, getComponentByType, canvasRef, options)
     }

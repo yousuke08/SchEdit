@@ -29,11 +29,22 @@ export class CanvasToSVGConverter {
     this.lineWidth = 2
     this.colorOverride = colorOverride
     this.invertColors = invertColors
+    this.transformStack = []
+    this.currentTransform = { x: 0, y: 0, rotation: 0 }
   }
 
   // Mock Canvas context methods
   beginPath() {
     this.currentPath = []
+  }
+
+  translate(x, y) {
+    this.currentTransform.x += x
+    this.currentTransform.y += y
+  }
+
+  rotate(angle) {
+    this.currentTransform.rotation += angle
   }
 
   moveTo(x, y) {
@@ -106,11 +117,13 @@ export class CanvasToSVGConverter {
   }
 
   save() {
-    // Not needed for SVG conversion
+    this.transformStack.push({ ...this.currentTransform })
   }
 
   restore() {
-    // Not needed for SVG conversion
+    if (this.transformStack.length > 0) {
+      this.currentTransform = this.transformStack.pop()
+    }
   }
 
   getSVGPaths() {

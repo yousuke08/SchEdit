@@ -65,7 +65,7 @@ export function loadProjectFromJSON(file, onLoad) {
 }
 
 // Export to SVG
-export function exportToSVG(wires, components, getComponentByType, options = {}) {
+export async function exportToSVG(wires, components, getComponentByType, options = {}) {
   const {
     useWireColor = false,
     wireColor = null,
@@ -78,99 +78,132 @@ export function exportToSVG(wires, components, getComponentByType, options = {})
   const effectiveWireColor = useWireColor ? wireColor : null
 
   // Dynamic import for canvas to SVG converter
-  import('./canvasToSVG.js').then(({ componentToSVG }) => {
-    // Check if there's anything to export
-    if (wires.length === 0 && components.length === 0) {
-      alert('エクスポートする内容がありません。')
-      return
+  const { componentToSVG } = await import('./canvasToSVG.js')
+
+  // Check if there's anything to export
+  if (wires.length === 0 && components.length === 0) {
+    alert('エクスポートする内容がありません。')
+    return
+  }
+
+  // Calculate bounds
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+
+  wires.forEach(wire => {
+    minX = Math.min(minX, wire.start.x, wire.end.x)
+    minY = Math.min(minY, wire.start.y, wire.end.y)
+    maxX = Math.max(maxX, wire.start.x, wire.end.x)
+    maxY = Math.max(maxY, wire.start.y, wire.end.y)
+  })
+
+  components.forEach(comp => {
+    const def = getComponentByType(comp.type)
+    if (def) {
+      minX = Math.min(minX, comp.x - def.width / 2)
+      minY = Math.min(minY, comp.y - def.height / 2)
+      maxX = Math.max(maxX, comp.x + def.width / 2)
+      maxY = Math.max(maxY, comp.y + def.height / 2)
     }
+  })
 
-    // Calculate bounds
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  // If bounds are still infinite, set default values
+  if (!isFinite(minX)) {
+    minX = 0
+    maxX = 100
+    minY = 0
+    maxY = 100
+  }
 
-    wires.forEach(wire => {
-      minX = Math.min(minX, wire.start.x, wire.end.x)
-      minY = Math.min(minY, wire.start.y, wire.end.y)
-      maxX = Math.max(maxX, wire.start.x, wire.end.x)
-      maxY = Math.max(maxY, wire.start.y, wire.end.y)
-    })
+  const padding = 50
+  const gridSize = 20
+  const width = maxX - minX + padding * 2
+  const height = maxY - minY + padding * 2
+  const offsetX = -minX + padding
+  const offsetY = -minY + padding
 
-    components.forEach(comp => {
-      const def = getComponentByType(comp.type)
-      if (def) {
-        minX = Math.min(minX, comp.x - def.width / 2)
-        minY = Math.min(minY, comp.y - def.height / 2)
-        maxX = Math.max(maxX, comp.x + def.width / 2)
-        maxY = Math.max(maxY, comp.y + def.height / 2)
-      }
-    })
-
-    // If bounds are still infinite, set default values
-    if (!isFinite(minX)) {
-      minX = 0
-      maxX = 100
-      minY = 0
-      maxY = 100
-    }
-
-    const padding = 50
-    const gridSize = 20
-    const width = maxX - minX + padding * 2
-    const height = maxY - minY + padding * 2
-    const offsetX = -minX + padding
-    const offsetY = -minY + padding
-
-    let svg = `<?xml version="1.0" encoding="UTF-8"?>
+  let svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
 ${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroundColor}"/>` : ''}
   <g transform="translate(${offsetX}, ${offsetY})">
 `
 
-    // Draw grid if enabled
-    if (showGrid) {
-      const gridStartX = Math.floor(minX / gridSize) * gridSize
-      const gridStartY = Math.floor(minY / gridSize) * gridSize
-      const gridEndX = Math.ceil(maxX / gridSize) * gridSize
-      const gridEndY = Math.ceil(maxY / gridSize) * gridSize
+  // Draw grid if enabled
+  if (showGrid) {
+    const gridStartX = Math.floor(minX / gridSize) * gridSize
+    const gridStartY = Math.floor(minY / gridSize) * gridSize
+    const gridEndX = Math.ceil(maxX / gridSize) * gridSize
+    const gridEndY = Math.ceil(maxY / gridSize) * gridSize
 
-      for (let x = gridStartX; x <= gridEndX; x += gridSize) {
-        svg += `    <line x1="${x}" y1="${gridStartY}" x2="${x}" y2="${gridEndY}" stroke="#333" stroke-width="1"/>\n`
-      }
-      for (let y = gridStartY; y <= gridEndY; y += gridSize) {
-        svg += `    <line x1="${gridStartX}" y1="${y}" x2="${gridEndX}" y2="${y}" stroke="#333" stroke-width="1"/>\n`
-      }
+    for (let x = gridStartX; x <= gridEndX; x += gridSize) {
+      svg += `    <line x1="${x}" y1="${gridStartY}" x2="${x}" y2="${gridEndY}" stroke="#333" stroke-width="1"/>\n`
     }
+    for (let y = gridStartY; y <= gridEndY; y += gridSize) {
+      svg += `    <line x1="${gridStartX}" y1="${y}" x2="${gridEndX}" y2="${y}" stroke="#333" stroke-width="1"/>\n`
+    }
+  }
 
-    // Draw wires
-    wires.forEach(wire => {
-      let strokeColor = effectiveWireColor || wire.color
-      if (invertColors) {
-        strokeColor = invertColor(strokeColor)
+  // Draw wires
+  wires.forEach(wire => {
+    let strokeColor = effectiveWireColor || wire.color
+    if (invertColors) {
+      strokeColor = invertColor(strokeColor)
+    }
+    svg += `    <line x1="${wire.start.x}" y1="${wire.start.y}" x2="${wire.end.x}" y2="${wire.end.y}" stroke="${strokeColor}" stroke-width="${wire.thickness}" stroke-linecap="round"/>\n`
+  })
+
+  // Draw components with actual symbols
+  components.forEach(comp => {
+    const def = getComponentByType(comp.type)
+    if (def) {
+      let colorOverride = effectiveWireColor
+      if (invertColors && !effectiveWireColor) {
+        // If inverting but no wire color override, we need to tell componentToSVG to invert
+        colorOverride = 'invert'
+      } else if (invertColors && effectiveWireColor) {
+        colorOverride = invertColor(effectiveWireColor)
       }
-      svg += `    <line x1="${wire.start.x}" y1="${wire.start.y}" x2="${wire.end.x}" y2="${wire.end.y}" stroke="${strokeColor}" stroke-width="${wire.thickness}" stroke-linecap="round"/>\n`
-    })
+      const svgPaths = componentToSVG(def, false, colorOverride, invertColors)
+      svg += `    <g transform="translate(${comp.x}, ${comp.y}) rotate(${(comp.rotation || 0) * 180 / Math.PI})">\n`
+      svg += `      ${svgPaths}\n`
+      svg += `    </g>\n`
+    }
+  })
 
-    // Draw components with actual symbols
-    components.forEach(comp => {
-      const def = getComponentByType(comp.type)
-      if (def) {
-        let colorOverride = effectiveWireColor
-        if (invertColors && !effectiveWireColor) {
-          // If inverting but no wire color override, we need to tell componentToSVG to invert
-          colorOverride = 'invert'
-        } else if (invertColors && effectiveWireColor) {
-          colorOverride = invertColor(effectiveWireColor)
-        }
-        const svgPaths = componentToSVG(def, false, colorOverride, invertColors)
-        svg += `    <g transform="translate(${comp.x}, ${comp.y}) rotate(${(comp.rotation || 0) * 180 / Math.PI})">\n`
-        svg += `      ${svgPaths}\n`
-        svg += `    </g>\n`
-      }
-    })
-
-    svg += `  </g>
+  svg += `  </g>
 </svg>`
 
+  // Check if File System Access API is supported
+  if ('showSaveFilePicker' in window) {
+    console.log('File System Access API is supported')
+    try {
+      const defaultFileName = `schematic_${new Date().toISOString().slice(0, 10)}.svg`
+      console.log('Opening save dialog with filename:', defaultFileName)
+      const handle = await window.showSaveFilePicker({
+        suggestedName: defaultFileName,
+        types: [
+          {
+            description: 'SVG Files',
+            accept: { 'image/svg+xml': ['.svg'] }
+          }
+        ]
+      })
+
+      console.log('File handle obtained, writing file...')
+      const writable = await handle.createWritable()
+      await writable.write(svg)
+      await writable.close()
+      console.log('File saved successfully')
+    } catch (err) {
+      // User canceled the dialog or error occurred
+      console.error('Error during save:', err.name, err.message)
+      if (err.name !== 'AbortError') {
+        console.error('Failed to save file:', err)
+        alert('ファイルの保存に失敗しました。')
+      }
+    }
+  } else {
+    console.log('File System Access API not supported, using download fallback')
+    // Fallback: Use download link
     const blob = new Blob([svg], { type: 'image/svg+xml' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -178,7 +211,7 @@ ${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroun
     link.download = `schematic_${new Date().toISOString().slice(0, 10)}.svg`
     link.click()
     URL.revokeObjectURL(url)
-  })
+  }
 }
 
 // Export to PNG
