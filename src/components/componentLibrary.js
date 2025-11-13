@@ -142,12 +142,12 @@ export const componentLibrary = {
       ctx.lineWidth = 2
       ctx.fillStyle = 'transparent'
 
-      // Draw coil inductor symbol
+      // Draw coil inductor symbol - all in one path
       ctx.beginPath()
       ctx.moveTo(0, 0)
       ctx.lineTo(10, 0)
 
-      // Draw 4 coils
+      // Draw 4 coils as continuous path
       for (let i = 0; i < 4; i++) {
         const x = 10 + i * 10
         ctx.arc(x + 5, 0, 5, Math.PI, 0, false)

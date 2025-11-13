@@ -30,7 +30,8 @@ export class CanvasToSVGConverter {
     this.colorOverride = colorOverride
     this.invertColors = invertColors
     this.transformStack = []
-    this.currentTransform = { x: 0, y: 0, rotation: 0 }
+    // Use identity matrix [a, b, c, d, e, f] for affine transformation
+    this.transformMatrix = [1, 0, 0, 1, 0, 0]
   }
 
   // Mock Canvas context methods
@@ -39,32 +40,62 @@ export class CanvasToSVGConverter {
   }
 
   translate(x, y) {
-    this.currentTransform.x += x
-    this.currentTransform.y += y
+    // Apply translation: multiply by translation matrix
+    const [a, b, c, d, e, f] = this.transformMatrix
+    this.transformMatrix = [a, b, c, d, a * x + c * y + e, b * x + d * y + f]
   }
 
   rotate(angle) {
-    this.currentTransform.rotation += angle
+    // Apply rotation: multiply by rotation matrix
+    const cos = Math.cos(angle)
+    const sin = Math.sin(angle)
+    const [a, b, c, d, e, f] = this.transformMatrix
+    this.transformMatrix = [
+      a * cos + c * sin,
+      b * cos + d * sin,
+      a * (-sin) + c * cos,
+      b * (-sin) + d * cos,
+      e,
+      f
+    ]
+  }
+
+  // Apply current transform to a point
+  transformPoint(x, y) {
+    const [a, b, c, d, e, f] = this.transformMatrix
+    return {
+      x: a * x + c * y + e,
+      y: b * x + d * y + f
+    }
   }
 
   moveTo(x, y) {
-    this.currentPath.push(`M ${x} ${y}`)
+    const p = this.transformPoint(x, y)
+    this.currentPath.push(`M ${p.x} ${p.y}`)
   }
 
   lineTo(x, y) {
-    this.currentPath.push(`L ${x} ${y}`)
+    const p = this.transformPoint(x, y)
+    this.currentPath.push(`L ${p.x} ${p.y}`)
   }
 
   arc(x, y, radius, startAngle, endAngle, anticlockwise) {
-    // Convert arc to path
-    const start = {
+    // Convert arc to path with transform applied
+    // Transform the center point
+    const center = this.transformPoint(x, y)
+
+    // Transform start and end points
+    const startLocal = {
       x: x + radius * Math.cos(startAngle),
       y: y + radius * Math.sin(startAngle)
     }
-    const end = {
+    const endLocal = {
       x: x + radius * Math.cos(endAngle),
       y: y + radius * Math.sin(endAngle)
     }
+
+    const start = this.transformPoint(startLocal.x, startLocal.y)
+    const end = this.transformPoint(endLocal.x, endLocal.y)
 
     const largeArc = Math.abs(endAngle - startAngle) > Math.PI ? 1 : 0
     const sweep = anticlockwise ? 0 : 1
@@ -117,12 +148,12 @@ export class CanvasToSVGConverter {
   }
 
   save() {
-    this.transformStack.push({ ...this.currentTransform })
+    this.transformStack.push([...this.transformMatrix])
   }
 
   restore() {
     if (this.transformStack.length > 0) {
-      this.currentTransform = this.transformStack.pop()
+      this.transformMatrix = this.transformStack.pop()
     }
   }
 
