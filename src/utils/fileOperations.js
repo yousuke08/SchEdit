@@ -35,7 +35,9 @@ export function saveProjectToJSON(wires, components) {
       type: comp.type,
       x: comp.x,
       y: comp.y,
-      rotation: comp.rotation || 0
+      rotation: comp.rotation || 0,
+      flipX: comp.flipX || false,
+      flipY: comp.flipY || false
     }))
   }
 
@@ -163,8 +165,23 @@ ${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroun
         colorOverride = invertColor(effectiveWireColor)
       }
       const svgPaths = componentToSVG(def, false, colorOverride, invertColors)
-      svg += `    <g transform="translate(${comp.x}, ${comp.y}) rotate(${(comp.rotation || 0) * 180 / Math.PI})">\n`
-      svg += `      ${svgPaths}\n`
+      const rotationDeg = (comp.rotation || 0) * 180 / Math.PI
+      const scaleX = comp.flipX ? -1 : 1
+      const scaleY = comp.flipY ? -1 : 1
+      console.log(`Component at (${comp.x}, ${comp.y}), rotation: ${comp.rotation} rad = ${rotationDeg} deg, flip: (${scaleX}, ${scaleY})`)
+
+      // Build transform string: translate, then rotate, then scale (matching Canvas order)
+      svg += `    <g transform="translate(${comp.x}, ${comp.y})">\n`
+      if (rotationDeg !== 0 || scaleX !== 1 || scaleY !== 1) {
+        let transform = ''
+        if (rotationDeg !== 0) transform += `rotate(${rotationDeg}) `
+        if (scaleX !== 1 || scaleY !== 1) transform += `scale(${scaleX}, ${scaleY})`
+        svg += `      <g transform="${transform.trim()}">\n`
+        svg += `        ${svgPaths}\n`
+        svg += `      </g>\n`
+      } else {
+        svg += `      ${svgPaths}\n`
+      }
       svg += `    </g>\n`
     }
   })

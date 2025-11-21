@@ -79,6 +79,19 @@ export class CanvasToSVGConverter {
     this.currentPath.push(`L ${p.x} ${p.y}`)
   }
 
+  rect(x, y, width, height) {
+    const topLeft = this.transformPoint(x, y)
+    const topRight = this.transformPoint(x + width, y)
+    const bottomRight = this.transformPoint(x + width, y + height)
+    const bottomLeft = this.transformPoint(x, y + height)
+
+    this.currentPath.push(`M ${topLeft.x} ${topLeft.y}`)
+    this.currentPath.push(`L ${topRight.x} ${topRight.y}`)
+    this.currentPath.push(`L ${bottomRight.x} ${bottomRight.y}`)
+    this.currentPath.push(`L ${bottomLeft.x} ${bottomLeft.y}`)
+    this.currentPath.push('Z')
+  }
+
   arc(x, y, radius, startAngle, endAngle, anticlockwise) {
     // Convert arc to path with transform applied
     // Transform the center point
@@ -138,11 +151,13 @@ export class CanvasToSVGConverter {
       } else if (this.invertColors && !this.colorOverride) {
         fillColor = invertColorSVG(this.fillStyle)
       }
+      console.log('Fill path:', pathData, 'color:', fillColor)
       this.paths.push({
         type: 'fill',
         path: pathData,
         fill: fillColor,
-        stroke: 'none'
+        stroke: 'none',
+        strokeWidth: 0
       })
     }
   }
