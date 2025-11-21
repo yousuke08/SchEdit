@@ -66,6 +66,106 @@ export function loadProjectFromJSON(file, onLoad) {
   reader.readAsText(file)
 }
 
+// Calculate bounds of wires and components
+function calculateBounds(wires, components, getComponentByType) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+
+  wires.forEach(wire => {
+    minX = Math.min(minX, wire.start.x, wire.end.x)
+    minY = Math.min(minY, wire.start.y, wire.end.y)
+    maxX = Math.max(maxX, wire.start.x, wire.end.x)
+    maxY = Math.max(maxY, wire.start.y, wire.end.y)
+  })
+
+  components.forEach(comp => {
+    const def = getComponentByType(comp.type)
+    if (def) {
+      minX = Math.min(minX, comp.x - def.width / 2)
+      minY = Math.min(minY, comp.y - def.height / 2)
+      maxX = Math.max(maxX, comp.x + def.width / 2)
+      maxY = Math.max(maxY, comp.y + def.height / 2)
+    }
+  })
+
+  // If bounds are still infinite, set default values
+  if (!isFinite(minX)) {
+    return { minX: 0, maxX: 100, minY: 0, maxY: 100 }
+  }
+
+  return { minX, maxX, minY, maxY }
+}
+
+// Generate SVG grid
+function generateGridSVG(minX, minY, maxX, maxY, gridSize) {
+  const gridStartX = Math.floor(minX / gridSize) * gridSize
+  const gridStartY = Math.floor(minY / gridSize) * gridSize
+  const gridEndX = Math.ceil(maxX / gridSize) * gridSize
+  const gridEndY = Math.ceil(maxY / gridSize) * gridSize
+
+  let svg = ''
+  for (let x = gridStartX; x <= gridEndX; x += gridSize) {
+    svg += `    <line x1="${x}" y1="${gridStartY}" x2="${x}" y2="${gridEndY}" stroke="#333" stroke-width="1"/>\n`
+  }
+  for (let y = gridStartY; y <= gridEndY; y += gridSize) {
+    svg += `    <line x1="${gridStartX}" y1="${y}" x2="${gridEndX}" y2="${y}" stroke="#333" stroke-width="1"/>\n`
+  }
+  return svg
+}
+
+// Generate SVG for wires
+function generateWiresSVG(wires, effectiveWireColor, invertColors) {
+  let svg = ''
+  wires.forEach(wire => {
+    let strokeColor = effectiveWireColor || wire.color
+    if (invertColors) {
+      strokeColor = invertColor(strokeColor)
+    }
+    svg += `    <line x1="${wire.start.x}" y1="${wire.start.y}" x2="${wire.end.x}" y2="${wire.end.y}" stroke="${strokeColor}" stroke-width="${wire.thickness}" stroke-linecap="round"/>\n`
+  })
+  return svg
+}
+
+// Generate SVG for a single component
+function generateComponentSVG(comp, def, componentToSVG, effectiveWireColor, invertColors) {
+  let colorOverride = effectiveWireColor
+  if (invertColors && !effectiveWireColor) {
+    colorOverride = 'invert'
+  } else if (invertColors && effectiveWireColor) {
+    colorOverride = invertColor(effectiveWireColor)
+  }
+
+  const svgPaths = componentToSVG(def, false, colorOverride, invertColors)
+  const rotationDeg = (comp.rotation || 0) * 180 / Math.PI
+  const scaleX = comp.flipX ? -1 : 1
+  const scaleY = comp.flipY ? -1 : 1
+
+  let svg = `    <g transform="translate(${comp.x}, ${comp.y})">\n`
+  if (rotationDeg !== 0 || scaleX !== 1 || scaleY !== 1) {
+    let transform = ''
+    if (rotationDeg !== 0) transform += `rotate(${rotationDeg}) `
+    if (scaleX !== 1 || scaleY !== 1) transform += `scale(${scaleX}, ${scaleY})`
+    svg += `      <g transform="${transform.trim()}">\n`
+    svg += `        ${svgPaths}\n`
+    svg += `      </g>\n`
+  } else {
+    svg += `      ${svgPaths}\n`
+  }
+  svg += `    </g>\n`
+  return svg
+}
+
+// Generate SVG for all components
+function generateComponentsSVG(components, getComponentByType, componentToSVG, effectiveWireColor, invertColors) {
+  let svg = ''
+  components.forEach(comp => {
+    const def = getComponentByType(comp.type)
+    if (def) {
+      svg += generateComponentSVG(comp, def, componentToSVG, effectiveWireColor, invertColors)
+    }
+  })
+  return svg
+}
+
 // Export to SVG
 export async function exportToSVG(wires, components, getComponentByType, options = {}) {
   const {
@@ -89,32 +189,7 @@ export async function exportToSVG(wires, components, getComponentByType, options
   }
 
   // Calculate bounds
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-
-  wires.forEach(wire => {
-    minX = Math.min(minX, wire.start.x, wire.end.x)
-    minY = Math.min(minY, wire.start.y, wire.end.y)
-    maxX = Math.max(maxX, wire.start.x, wire.end.x)
-    maxY = Math.max(maxY, wire.start.y, wire.end.y)
-  })
-
-  components.forEach(comp => {
-    const def = getComponentByType(comp.type)
-    if (def) {
-      minX = Math.min(minX, comp.x - def.width / 2)
-      minY = Math.min(minY, comp.y - def.height / 2)
-      maxX = Math.max(maxX, comp.x + def.width / 2)
-      maxY = Math.max(maxY, comp.y + def.height / 2)
-    }
-  })
-
-  // If bounds are still infinite, set default values
-  if (!isFinite(minX)) {
-    minX = 0
-    maxX = 100
-    minY = 0
-    maxY = 100
-  }
+  const { minX, maxX, minY, maxY } = calculateBounds(wires, components, getComponentByType)
 
   const padding = 50
   const gridSize = 20
@@ -123,68 +198,19 @@ export async function exportToSVG(wires, components, getComponentByType, options
   const offsetX = -minX + padding
   const offsetY = -minY + padding
 
+  // Build SVG
   let svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
 ${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroundColor}"/>` : ''}
   <g transform="translate(${offsetX}, ${offsetY})">
 `
 
-  // Draw grid if enabled
   if (showGrid) {
-    const gridStartX = Math.floor(minX / gridSize) * gridSize
-    const gridStartY = Math.floor(minY / gridSize) * gridSize
-    const gridEndX = Math.ceil(maxX / gridSize) * gridSize
-    const gridEndY = Math.ceil(maxY / gridSize) * gridSize
-
-    for (let x = gridStartX; x <= gridEndX; x += gridSize) {
-      svg += `    <line x1="${x}" y1="${gridStartY}" x2="${x}" y2="${gridEndY}" stroke="#333" stroke-width="1"/>\n`
-    }
-    for (let y = gridStartY; y <= gridEndY; y += gridSize) {
-      svg += `    <line x1="${gridStartX}" y1="${y}" x2="${gridEndX}" y2="${y}" stroke="#333" stroke-width="1"/>\n`
-    }
+    svg += generateGridSVG(minX, minY, maxX, maxY, gridSize)
   }
 
-  // Draw wires
-  wires.forEach(wire => {
-    let strokeColor = effectiveWireColor || wire.color
-    if (invertColors) {
-      strokeColor = invertColor(strokeColor)
-    }
-    svg += `    <line x1="${wire.start.x}" y1="${wire.start.y}" x2="${wire.end.x}" y2="${wire.end.y}" stroke="${strokeColor}" stroke-width="${wire.thickness}" stroke-linecap="round"/>\n`
-  })
-
-  // Draw components with actual symbols
-  components.forEach(comp => {
-    const def = getComponentByType(comp.type)
-    if (def) {
-      let colorOverride = effectiveWireColor
-      if (invertColors && !effectiveWireColor) {
-        // If inverting but no wire color override, we need to tell componentToSVG to invert
-        colorOverride = 'invert'
-      } else if (invertColors && effectiveWireColor) {
-        colorOverride = invertColor(effectiveWireColor)
-      }
-      const svgPaths = componentToSVG(def, false, colorOverride, invertColors)
-      const rotationDeg = (comp.rotation || 0) * 180 / Math.PI
-      const scaleX = comp.flipX ? -1 : 1
-      const scaleY = comp.flipY ? -1 : 1
-      console.log(`Component at (${comp.x}, ${comp.y}), rotation: ${comp.rotation} rad = ${rotationDeg} deg, flip: (${scaleX}, ${scaleY})`)
-
-      // Build transform string: translate, then rotate, then scale (matching Canvas order)
-      svg += `    <g transform="translate(${comp.x}, ${comp.y})">\n`
-      if (rotationDeg !== 0 || scaleX !== 1 || scaleY !== 1) {
-        let transform = ''
-        if (rotationDeg !== 0) transform += `rotate(${rotationDeg}) `
-        if (scaleX !== 1 || scaleY !== 1) transform += `scale(${scaleX}, ${scaleY})`
-        svg += `      <g transform="${transform.trim()}">\n`
-        svg += `        ${svgPaths}\n`
-        svg += `      </g>\n`
-      } else {
-        svg += `      ${svgPaths}\n`
-      }
-      svg += `    </g>\n`
-    }
-  })
+  svg += generateWiresSVG(wires, effectiveWireColor, invertColors)
+  svg += generateComponentsSVG(components, getComponentByType, componentToSVG, effectiveWireColor, invertColors)
 
   svg += `  </g>
 </svg>`

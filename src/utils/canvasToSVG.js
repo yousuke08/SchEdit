@@ -151,7 +151,6 @@ export class CanvasToSVGConverter {
       } else if (this.invertColors && !this.colorOverride) {
         fillColor = invertColorSVG(this.fillStyle)
       }
-      console.log('Fill path:', pathData, 'color:', fillColor)
       this.paths.push({
         type: 'fill',
         path: pathData,
