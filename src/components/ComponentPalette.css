@@ -15,8 +15,30 @@
   font-size: 13px;
 }
 
+.category-header {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+}
+
+.category-header:hover {
+  background-color: #333;
+}
+
+.collapse-icon {
+  display: inline-block;
+  width: 16px;
+  margin-right: 8px;
+  font-size: 10px;
+}
+
 .component-list {
   padding: 10px;
+}
+
+.component-list.collapsed {
+  display: none;
 }
 
 .component-item {
