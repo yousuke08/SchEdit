@@ -12,7 +12,7 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
   const [exportType, setExportType] = useState(null)
   const fileInputRef = useRef(null)
   const exportMenuRef = useRef(null)
-  const { wires, components, addWire, addComponent } = useSchematicStore()
+  const { wires, components, addWire, addComponent, undo, redo, canUndo, canRedo } = useSchematicStore()
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -138,8 +138,8 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
         </div>
       </div>
       <div className="toolbar-section">
-        <button title="元に戻す (Ctrl+Z)">Undo</button>
-        <button title="やり直し (Ctrl+Y)">Redo</button>
+        <button onClick={undo} disabled={!canUndo()} title="元に戻す (Ctrl+Z)">Undo</button>
+        <button onClick={redo} disabled={!canRedo()} title="やり直し (Ctrl+Y)">Redo</button>
       </div>
       <div className="toolbar-section">
         <label>

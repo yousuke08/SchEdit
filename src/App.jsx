@@ -11,7 +11,7 @@ import { saveToLocalStorage, loadFromLocalStorage } from './utils/fileOperations
 function App() {
   const [showGrid, setShowGrid] = useState(true)
   const canvasRef = useRef(null)
-  const { wires, components } = useSchematicStore()
+  const { wires, components, undo, redo } = useSchematicStore()
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -30,6 +30,25 @@ function App() {
       saveToLocalStorage(wires, components)
     }
   }, [wires, components])
+
+  // Keyboard shortcuts for Undo/Redo
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl+Z or Cmd+Z for Undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        undo()
+      }
+      // Ctrl+Y or Cmd+Y or Ctrl+Shift+Z for Redo
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault()
+        redo()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [undo, redo])
 
   return (
     <div className="app">
