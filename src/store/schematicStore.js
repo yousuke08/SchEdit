@@ -109,6 +109,12 @@ const useSchematicStore = create((set, get) => ({
     get().saveToHistory()
   },
 
+  updateWireWithoutHistory: (id, updates) => {
+    set((state) => ({
+      wires: state.wires.map(w => w.id === id ? { ...w, ...updates } : w)
+    }))
+  },
+
   setSelectedWire: (id) => set({ selectedWireId: id, selectedComponentId: null }),
 
   setWireColor: (color) => set({ wireColor: color }),
@@ -137,6 +143,12 @@ const useSchematicStore = create((set, get) => ({
       components: state.components.map(c => c.id === id ? { ...c, ...updates } : c)
     }))
     get().saveToHistory()
+  },
+
+  updateComponentWithoutHistory: (id, updates) => {
+    set((state) => ({
+      components: state.components.map(c => c.id === id ? { ...c, ...updates } : c)
+    }))
   },
 
   setSelectedComponent: (id) => set({ selectedComponentId: id, selectedWireId: null }),

@@ -31,6 +31,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     setSelectedWire,
     removeWire,
     updateWire,
+    updateWireWithoutHistory,
     wireColor,
     wireThickness,
     wireStyle,
@@ -40,12 +41,14 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     setSelectedComponent,
     removeComponent,
     updateComponent,
+    updateComponentWithoutHistory,
     selectedWireIds,
     selectedComponentIds,
     setMultipleSelection,
     clearSelection,
     copyToClipboard,
-    pasteFromClipboard
+    pasteFromClipboard,
+    saveToHistory
   } = useSchematicStore()
 
   // Expose methods to parent component
@@ -497,11 +500,11 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       const wire = wires.find(w => w.id === draggingWireEnd.wireId)
       if (wire) {
         if (draggingWireEnd.endpoint === 'start') {
-          updateWire(draggingWireEnd.wireId, {
+          updateWireWithoutHistory(draggingWireEnd.wireId, {
             start: snappedPos
           })
         } else {
-          updateWire(draggingWireEnd.wireId, {
+          updateWireWithoutHistory(draggingWireEnd.wireId, {
             end: snappedPos
           })
         }
@@ -522,7 +525,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       selectedComponentIds.forEach(compId => {
         const comp = components.find(c => c.id === compId)
         if (comp) {
-          updateComponent(compId, {
+          updateComponentWithoutHistory(compId, {
             x: comp.x + dx,
             y: comp.y + dy
           })
@@ -533,7 +536,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       selectedWireIds.forEach(wireId => {
         const wire = wires.find(w => w.id === wireId)
         if (wire) {
-          updateWire(wireId, {
+          updateWireWithoutHistory(wireId, {
             start: {
               x: wire.start.x + dx,
               y: wire.start.y + dy
@@ -554,7 +557,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       const newY = worldPos.y - dragOffset.y
       const snappedPos = { x: snapToGrid(newX), y: snapToGrid(newY) }
 
-      updateComponent(draggingComponent, {
+      updateComponentWithoutHistory(draggingComponent, {
         x: snappedPos.x,
         y: snappedPos.y
       })
@@ -563,6 +566,10 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
 
   const handleMouseUp = () => {
     setIsPanning(false)
+
+    // Save history if any dragging operation was performed
+    const wasDragging = draggingComponent || draggingSelection || draggingWireEnd
+
     setDraggingComponent(null)
 
     // Snap selected items to grid after dragging
@@ -570,7 +577,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       selectedComponentIds.forEach(compId => {
         const comp = components.find(c => c.id === compId)
         if (comp) {
-          updateComponent(compId, {
+          updateComponentWithoutHistory(compId, {
             x: snapToGrid(comp.x),
             y: snapToGrid(comp.y)
           })
@@ -580,7 +587,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       selectedWireIds.forEach(wireId => {
         const wire = wires.find(w => w.id === wireId)
         if (wire) {
-          updateWire(wireId, {
+          updateWireWithoutHistory(wireId, {
             start: {
               x: snapToGrid(wire.start.x),
               y: snapToGrid(wire.start.y)
@@ -597,6 +604,11 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     setDraggingSelection(false)
     setSelectionDragStart(null)
     setDraggingWireEnd(null)
+
+    // Save to history after all dragging operations complete
+    if (wasDragging) {
+      saveToHistory()
+    }
 
     // Finish selection box
     if (selectionBox) {
