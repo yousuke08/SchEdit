@@ -13,8 +13,10 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
   const [isPanning, setIsPanning] = useState(false)
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 })
   const [drawingWire, setDrawingWire] = useState(null)
+  const [drawingRect, setDrawingRect] = useState(null)
   const [currentMousePos, setCurrentMousePos] = useState(null)
   const [draggingComponent, setDraggingComponent] = useState(null)
+  const [draggingRect, setDraggingRect] = useState(null)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [selectionBox, setSelectionBox] = useState(null)
   const [isMouseDownInSelectMode, setIsMouseDownInSelectMode] = useState(false)
@@ -23,6 +25,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
   const [lastClickTime, setLastClickTime] = useState(0)
   const [lastClickPos, setLastClickPos] = useState(null)
   const [draggingWireEnd, setDraggingWireEnd] = useState(null) // { wireId, endpoint: 'start' | 'end' }
+  const [draggingRectCorner, setDraggingRectCorner] = useState(null) // { rectId, corner: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight' }
 
   const {
     wires,
@@ -35,6 +38,14 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     wireColor,
     wireThickness,
     wireStyle,
+    rectangles,
+    addRectangle,
+    selectedRectId,
+    setSelectedRect,
+    removeRectangle,
+    updateRectangle,
+    updateRectangleWithoutHistory,
+    drawingMode,
     components,
     addComponent,
     selectedComponentId,
@@ -43,6 +54,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     updateComponent,
     updateComponentWithoutHistory,
     selectedWireIds,
+    selectedRectIds,
     selectedComponentIds,
     setMultipleSelection,
     clearSelection,
@@ -124,6 +136,46 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         ctx.stroke()
       }
     }
+
+    // Draw rectangles
+    rectangles.forEach(rect => {
+      const isSelected = rect.id === selectedRectId || selectedRectIds.includes(rect.id)
+      ctx.strokeStyle = isSelected ? '#ffff00' : rect.color
+      ctx.lineWidth = rect.thickness
+      ctx.lineCap = 'square'
+      ctx.lineJoin = 'miter'
+
+      const x = Math.min(rect.start.x, rect.end.x)
+      const y = Math.min(rect.start.y, rect.end.y)
+      const width = Math.abs(rect.end.x - rect.start.x)
+      const height = Math.abs(rect.end.y - rect.start.y)
+
+      ctx.beginPath()
+      ctx.rect(x, y, width, height)
+      ctx.stroke()
+
+      // Draw corner points if selected
+      if (isSelected) {
+        ctx.fillStyle = '#ffff00'
+        const pointRadius = 4
+        // Top-left
+        ctx.beginPath()
+        ctx.arc(x, y, pointRadius, 0, Math.PI * 2)
+        ctx.fill()
+        // Top-right
+        ctx.beginPath()
+        ctx.arc(x + width, y, pointRadius, 0, Math.PI * 2)
+        ctx.fill()
+        // Bottom-left
+        ctx.beginPath()
+        ctx.arc(x, y + height, pointRadius, 0, Math.PI * 2)
+        ctx.fill()
+        // Bottom-right
+        ctx.beginPath()
+        ctx.arc(x + width, y + height, pointRadius, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    })
 
     // Draw wires
     wires.forEach(wire => {
@@ -291,6 +343,34 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       ctx.setLineDash([])
     }
 
+    // Draw rectangle being drawn
+    if (drawingRect && currentMousePos) {
+      const canvas = canvasRef.current
+      const rect = canvas.getBoundingClientRect()
+      const worldPos = screenToWorld({
+        x: currentMousePos.x - rect.left,
+        y: currentMousePos.y - rect.top
+      }, pan, zoom)
+      const snappedPos = { x: snapToGrid(worldPos.x), y: snapToGrid(worldPos.y) }
+
+      const x = Math.min(drawingRect.x, snappedPos.x)
+      const y = Math.min(drawingRect.y, snappedPos.y)
+      const width = Math.abs(snappedPos.x - drawingRect.x)
+      const height = Math.abs(snappedPos.y - drawingRect.y)
+
+      ctx.strokeStyle = wireColor
+      ctx.lineWidth = wireThickness
+      ctx.lineCap = 'square'
+      ctx.lineJoin = 'miter'
+      ctx.setLineDash([5, 5])
+
+      ctx.beginPath()
+      ctx.rect(x, y, width, height)
+      ctx.stroke()
+
+      ctx.setLineDash([])
+    }
+
     // Draw selection box
     if (selectionBox) {
       const { start, end } = selectionBox
@@ -308,7 +388,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     }
 
     ctx.restore()
-  }, [showGrid, zoom, pan, wires, selectedWireId, drawingWire, currentMousePos, wireColor, wireThickness, components, selectedComponentId, selectedWireIds, selectedComponentIds, selectionBox])
+  }, [showGrid, zoom, pan, wires, rectangles, selectedWireId, selectedRectId, drawingWire, drawingRect, currentMousePos, wireColor, wireThickness, components, selectedComponentId, selectedWireIds, selectedRectIds, selectedComponentIds, selectionBox])
 
   const handleMouseDown = (e) => {
     if (e.button === 1 || (e.button === 0 && e.shiftKey)) { // Middle button or Shift+Left
@@ -344,6 +424,23 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
           }
         }
         setDrawingWire(null)
+        setCurrentMousePos(null)
+        return
+      }
+
+      // If currently drawing rectangle, finish it
+      if (drawingRect) {
+        // Finish drawing rectangle
+        // Check if start and end points are different
+        if (drawingRect.x !== snappedPos.x || drawingRect.y !== snappedPos.y) {
+          addRectangle({
+            start: drawingRect,
+            end: snappedPos,
+            color: wireColor,
+            thickness: wireThickness
+          })
+        }
+        setDrawingRect(null)
         setCurrentMousePos(null)
         return
       }
@@ -446,6 +543,118 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         return
       }
 
+      // Check if clicking on rectangle corner first
+      const cornerThreshold = 8
+      let clickedCorner = null
+
+      // First check selected rectangles (higher priority)
+      const selectedRects = rectangles.filter(r => selectedRectIds.includes(r.id) || r.id === selectedRectId)
+      for (const rect of selectedRects) {
+        const minX = Math.min(rect.start.x, rect.end.x)
+        const maxX = Math.max(rect.start.x, rect.end.x)
+        const minY = Math.min(rect.start.y, rect.end.y)
+        const maxY = Math.max(rect.start.y, rect.end.y)
+
+        // Check each corner
+        const corners = {
+          topLeft: { x: minX, y: minY },
+          topRight: { x: maxX, y: minY },
+          bottomLeft: { x: minX, y: maxY },
+          bottomRight: { x: maxX, y: maxY }
+        }
+
+        for (const [cornerName, cornerPos] of Object.entries(corners)) {
+          const dist = Math.sqrt(
+            Math.pow(worldPos.x - cornerPos.x, 2) + Math.pow(worldPos.y - cornerPos.y, 2)
+          )
+          if (dist < cornerThreshold) {
+            clickedCorner = { rectId: rect.id, corner: cornerName }
+            break
+          }
+        }
+        if (clickedCorner) break
+      }
+
+      // If no selected rectangle corner found, check all rectangles
+      if (!clickedCorner) {
+        for (const rect of rectangles) {
+          // Skip already checked selected rectangles
+          if (selectedRectIds.includes(rect.id) || rect.id === selectedRectId) continue
+
+          const minX = Math.min(rect.start.x, rect.end.x)
+          const maxX = Math.max(rect.start.x, rect.end.x)
+          const minY = Math.min(rect.start.y, rect.end.y)
+          const maxY = Math.max(rect.start.y, rect.end.y)
+
+          // Check each corner
+          const corners = {
+            topLeft: { x: minX, y: minY },
+            topRight: { x: maxX, y: minY },
+            bottomLeft: { x: minX, y: maxY },
+            bottomRight: { x: maxX, y: maxY }
+          }
+
+          for (const [cornerName, cornerPos] of Object.entries(corners)) {
+            const dist = Math.sqrt(
+              Math.pow(worldPos.x - cornerPos.x, 2) + Math.pow(worldPos.y - cornerPos.y, 2)
+            )
+            if (dist < cornerThreshold) {
+              clickedCorner = { rectId: rect.id, corner: cornerName }
+              break
+            }
+          }
+          if (clickedCorner) break
+        }
+      }
+
+      if (clickedCorner) {
+        // Start dragging rectangle corner
+        setDraggingRectCorner(clickedCorner)
+        setSelectedRect(clickedCorner.rectId)
+        return
+      }
+
+      // Check if clicking on rectangle
+      let clickedRect = null
+      for (const rect of rectangles) {
+        const minX = Math.min(rect.start.x, rect.end.x)
+        const maxX = Math.max(rect.start.x, rect.end.x)
+        const minY = Math.min(rect.start.y, rect.end.y)
+        const maxY = Math.max(rect.start.y, rect.end.y)
+        const threshold = 10 / zoom
+
+        // Check if clicking on rectangle border
+        const onLeftEdge = Math.abs(worldPos.x - minX) < threshold && worldPos.y >= minY - threshold && worldPos.y <= maxY + threshold
+        const onRightEdge = Math.abs(worldPos.x - maxX) < threshold && worldPos.y >= minY - threshold && worldPos.y <= maxY + threshold
+        const onTopEdge = Math.abs(worldPos.y - minY) < threshold && worldPos.x >= minX - threshold && worldPos.x <= maxX + threshold
+        const onBottomEdge = Math.abs(worldPos.y - maxY) < threshold && worldPos.x >= minX - threshold && worldPos.x <= maxX + threshold
+
+        if (onLeftEdge || onRightEdge || onTopEdge || onBottomEdge) {
+          clickedRect = rect
+          break
+        }
+      }
+
+      if (clickedRect) {
+        // Check if rectangle is already selected
+        if (selectedRectIds.includes(clickedRect.id)) {
+          // Start dragging selected items
+          setDraggingSelection(true)
+          setSelectionDragStart(worldPos)
+        } else if (clickedRect.id === selectedRectId) {
+          // Single selected rectangle - start dragging it
+          setDraggingRect(clickedRect.id)
+          setDragOffset({
+            x: worldPos.x - clickedRect.start.x,
+            y: worldPos.y - clickedRect.start.y
+          })
+        } else {
+          // Select rectangle
+          setSelectedRect(clickedRect.id)
+        }
+        return
+      }
+
       // Check if clicking on wire
       const clickThreshold = 10 / zoom
       let clickedWire = null
@@ -490,7 +699,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       setLastMousePos({ x: e.clientX, y: e.clientY })
     }
 
-    if (drawingWire) {
+    if (drawingWire || drawingRect) {
       setCurrentMousePos({ x: e.clientX, y: e.clientY })
     }
 
@@ -508,6 +717,50 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
             end: snappedPos
           })
         }
+      }
+    }
+
+    // Dragging rectangle corner
+    if (draggingRectCorner) {
+      const snappedPos = { x: snapToGrid(worldPos.x), y: snapToGrid(worldPos.y) }
+      const rect = rectangles.find(r => r.id === draggingRectCorner.rectId)
+      if (rect) {
+        const minX = Math.min(rect.start.x, rect.end.x)
+        const maxX = Math.max(rect.start.x, rect.end.x)
+        const minY = Math.min(rect.start.y, rect.end.y)
+        const maxY = Math.max(rect.start.y, rect.end.y)
+
+        let newStart = { ...rect.start }
+        let newEnd = { ...rect.end }
+
+        // Update the appropriate corner based on which one is being dragged
+        switch (draggingRectCorner.corner) {
+          case 'topLeft':
+            // Moving top-left corner, opposite is bottom-right
+            newStart = snappedPos
+            newEnd = { x: maxX, y: maxY }
+            break
+          case 'topRight':
+            // Moving top-right corner, opposite is bottom-left
+            newStart = { x: minX, y: snappedPos.y }
+            newEnd = { x: snappedPos.x, y: maxY }
+            break
+          case 'bottomLeft':
+            // Moving bottom-left corner, opposite is top-right
+            newStart = { x: snappedPos.x, y: minY }
+            newEnd = { x: maxX, y: snappedPos.y }
+            break
+          case 'bottomRight':
+            // Moving bottom-right corner, opposite is top-left
+            newStart = { x: minX, y: minY }
+            newEnd = snappedPos
+            break
+        }
+
+        updateRectangleWithoutHistory(draggingRectCorner.rectId, {
+          start: newStart,
+          end: newEnd
+        })
       }
     }
 
@@ -549,6 +802,23 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         }
       })
 
+      // Move all selected rectangles (without snapping during drag)
+      selectedRectIds.forEach(rectId => {
+        const rect = rectangles.find(r => r.id === rectId)
+        if (rect) {
+          updateRectangleWithoutHistory(rectId, {
+            start: {
+              x: rect.start.x + dx,
+              y: rect.start.y + dy
+            },
+            end: {
+              x: rect.end.x + dx,
+              y: rect.end.y + dy
+            }
+          })
+        }
+      })
+
       setSelectionDragStart(worldPos)
     }
 
@@ -562,15 +832,54 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         y: snappedPos.y
       })
     }
+
+    if (draggingRect) {
+      const rect = rectangles.find(r => r.id === draggingRect)
+      if (rect) {
+        const newStartX = worldPos.x - dragOffset.x
+        const newStartY = worldPos.y - dragOffset.y
+        const dx = newStartX - rect.start.x
+        const dy = newStartY - rect.start.y
+
+        updateRectangleWithoutHistory(draggingRect, {
+          start: {
+            x: rect.start.x + dx,
+            y: rect.start.y + dy
+          },
+          end: {
+            x: rect.end.x + dx,
+            y: rect.end.y + dy
+          }
+        })
+      }
+    }
   }
 
   const handleMouseUp = () => {
     setIsPanning(false)
 
     // Save history if any dragging operation was performed
-    const wasDragging = draggingComponent || draggingSelection || draggingWireEnd
+    const wasDragging = draggingComponent || draggingRect || draggingSelection || draggingWireEnd || draggingRectCorner
 
     setDraggingComponent(null)
+
+    // Snap rectangle to grid after dragging
+    if (draggingRect) {
+      const rect = rectangles.find(r => r.id === draggingRect)
+      if (rect) {
+        updateRectangleWithoutHistory(draggingRect, {
+          start: {
+            x: snapToGrid(rect.start.x),
+            y: snapToGrid(rect.start.y)
+          },
+          end: {
+            x: snapToGrid(rect.end.x),
+            y: snapToGrid(rect.end.y)
+          }
+        })
+      }
+    }
+    setDraggingRect(null)
 
     // Snap selected items to grid after dragging
     if (draggingSelection) {
@@ -599,11 +908,28 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
           })
         }
       })
+
+      selectedRectIds.forEach(rectId => {
+        const rect = rectangles.find(r => r.id === rectId)
+        if (rect) {
+          updateRectangleWithoutHistory(rectId, {
+            start: {
+              x: snapToGrid(rect.start.x),
+              y: snapToGrid(rect.start.y)
+            },
+            end: {
+              x: snapToGrid(rect.end.x),
+              y: snapToGrid(rect.end.y)
+            }
+          })
+        }
+      })
     }
 
     setDraggingSelection(false)
     setSelectionDragStart(null)
     setDraggingWireEnd(null)
+    setDraggingRectCorner(null)
 
     // Save to history after all dragging operations complete
     if (wasDragging) {
@@ -619,6 +945,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       const maxY = Math.max(start.y, end.y)
 
       const selectedWires = []
+      const selectedRects = []
       const selectedComps = []
 
       // Select wires within box
@@ -633,6 +960,18 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         }
       })
 
+      // Select rectangles within box
+      rectangles.forEach(rect => {
+        const rectMinX = Math.min(rect.start.x, rect.end.x)
+        const rectMaxX = Math.max(rect.start.x, rect.end.x)
+        const rectMinY = Math.min(rect.start.y, rect.end.y)
+        const rectMaxY = Math.max(rect.start.y, rect.end.y)
+
+        if (rectMinX >= minX && rectMaxX <= maxX && rectMinY >= minY && rectMaxY <= maxY) {
+          selectedRects.push(rect.id)
+        }
+      })
+
       // Select components within box
       components.forEach(comp => {
         if (comp.x >= minX && comp.x <= maxX && comp.y >= minY && comp.y <= maxY) {
@@ -640,7 +979,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         }
       })
 
-      setMultipleSelection(selectedWires, selectedComps)
+      setMultipleSelection(selectedWires, selectedRects, selectedComps)
       setSelectionBox(null)
     }
 
@@ -653,8 +992,10 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
       setDrawingWire(null)
+      setDrawingRect(null)
       setCurrentMousePos(null)
       setSelectedWire(null)
+      setSelectedRect(null)
       setSelectedComponent(null)
       setSelectionBox(null)
       clearSelection()
@@ -662,16 +1003,19 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       e.preventDefault()
       const state = useSchematicStore.getState()
 
-      // Copy selected components and wires
+      // Copy selected components, wires, and rectangles
       const selectedComps = state.selectedComponentIds
         .map(id => components.find(c => c.id === id))
         .filter(c => c)
       const selectedWires = state.selectedWireIds
         .map(id => wires.find(w => w.id === id))
         .filter(w => w)
+      const selectedRects = state.selectedRectIds
+        .map(id => rectangles.find(r => r.id === id))
+        .filter(r => r)
 
-      if (selectedComps.length > 0 || selectedWires.length > 0) {
-        copyToClipboard(selectedComps, selectedWires)
+      if (selectedComps.length > 0 || selectedWires.length > 0 || selectedRects.length > 0) {
+        copyToClipboard(selectedComps, selectedWires, selectedRects)
       }
     } else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
       e.preventDefault()
@@ -688,6 +1032,11 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         clearSelection()
         return
       }
+      if (state.selectedRectIds.length > 0) {
+        state.selectedRectIds.forEach(id => removeRectangle(id))
+        clearSelection()
+        return
+      }
       if (state.selectedComponentIds.length > 0) {
         state.selectedComponentIds.forEach(id => removeComponent(id))
         clearSelection()
@@ -697,6 +1046,8 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       // Check for single selections (draw mode)
       if (state.selectedWireId) {
         removeWire(state.selectedWireId)
+      } else if (state.selectedRectId) {
+        removeRectangle(state.selectedRectId)
       } else if (state.selectedComponentId) {
         removeComponent(state.selectedComponentId)
       }
@@ -863,10 +1214,16 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     }, pan, zoom)
     const snappedPos = { x: snapToGrid(worldPos.x), y: snapToGrid(worldPos.y) }
 
-    // Start drawing wire on double-click
-    if (!drawingWire) {
+    // Start drawing based on drawing mode
+    if (drawingMode === 'line' && !drawingWire) {
       setDrawingWire(snappedPos)
       setSelectedWire(null)
+      setSelectedRect(null)
+      setSelectedComponent(null)
+    } else if (drawingMode === 'rect' && !drawingRect) {
+      setDrawingRect(snappedPos)
+      setSelectedWire(null)
+      setSelectedRect(null)
       setSelectedComponent(null)
     }
   }

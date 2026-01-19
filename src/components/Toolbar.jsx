@@ -12,7 +12,7 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
   const [exportType, setExportType] = useState(null)
   const fileInputRef = useRef(null)
   const exportMenuRef = useRef(null)
-  const { wires, components, addWire, addComponent, undo, redo, canUndo, canRedo } = useSchematicStore()
+  const { wires, rectangles, components, addWire, addComponent, drawingMode, setDrawingMode, undo, redo, canUndo, canRedo } = useSchematicStore()
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -44,7 +44,7 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
   }
 
   const handleSave = () => {
-    saveProjectToJSON(wires, components)
+    saveProjectToJSON(wires, components, rectangles)
   }
 
   const handleLoad = () => {
@@ -56,12 +56,19 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
     if (file) {
       loadProjectFromJSON(file, (project) => {
         // Clear current project
-        useSchematicStore.setState({ wires: [], components: [] })
+        useSchematicStore.setState({ wires: [], rectangles: [], components: [] })
 
         // Load wires
         project.wires.forEach(wire => {
           addWire(wire)
         })
+
+        // Load rectangles
+        if (project.rectangles) {
+          project.rectangles.forEach(rect => {
+            useSchematicStore.getState().addRectangle(rect)
+          })
+        }
 
         // Load components
         project.components.forEach(comp => {
@@ -91,9 +98,9 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
 
   const handleExportWithOptions = async (options) => {
     if (exportType === 'svg') {
-      await exportToSVG(wires, components, getComponentByType, options)
+      await exportToSVG(wires, rectangles, components, getComponentByType, options)
     } else if (exportType === 'png') {
-      exportToPNG(wires, components, getComponentByType, canvasRef, options)
+      exportToPNG(wires, rectangles, components, getComponentByType, canvasRef, options)
     }
   }
 
@@ -140,6 +147,40 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
       <div className="toolbar-section">
         <button onClick={undo} disabled={!canUndo()} title="元に戻す (Ctrl+Z)">Undo</button>
         <button onClick={redo} disabled={!canRedo()} title="やり直し (Ctrl+Y)">Redo</button>
+      </div>
+      <div className="toolbar-section">
+        <button
+          onClick={() => setDrawingMode('line')}
+          disabled={drawingMode === 'line'}
+          title="線の描画"
+          style={{
+            backgroundColor: drawingMode === 'line' ? '#4a9eff' : undefined,
+            padding: '4px 8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="3" y1="17" x2="17" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </button>
+        <button
+          onClick={() => setDrawingMode('rect')}
+          disabled={drawingMode === 'rect'}
+          title="四角の描画"
+          style={{
+            backgroundColor: drawingMode === 'rect' ? '#4a9eff' : undefined,
+            padding: '4px 8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="3" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none"/>
+          </svg>
+        </button>
       </div>
       <div className="toolbar-section">
         <label>

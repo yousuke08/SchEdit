@@ -22,7 +22,7 @@ function invertColor(color) {
 }
 
 // Save project to JSON file
-export function saveProjectToJSON(wires, components) {
+export function saveProjectToJSON(wires, components, rectangles = []) {
   const project = {
     version: '1.0',
     wires: wires.map(wire => ({
@@ -30,6 +30,12 @@ export function saveProjectToJSON(wires, components) {
       end: wire.end,
       color: wire.color,
       thickness: wire.thickness
+    })),
+    rectangles: rectangles.map(rect => ({
+      start: rect.start,
+      end: rect.end,
+      color: rect.color,
+      thickness: rect.thickness
     })),
     components: components.map(comp => ({
       type: comp.type,
@@ -66,8 +72,8 @@ export function loadProjectFromJSON(file, onLoad) {
   reader.readAsText(file)
 }
 
-// Calculate bounds of wires and components
-function calculateBounds(wires, components, getComponentByType) {
+// Calculate bounds of wires, rectangles, and components
+function calculateBounds(wires, rectangles, components, getComponentByType) {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
 
   wires.forEach(wire => {
@@ -75,6 +81,13 @@ function calculateBounds(wires, components, getComponentByType) {
     minY = Math.min(minY, wire.start.y, wire.end.y)
     maxX = Math.max(maxX, wire.start.x, wire.end.x)
     maxY = Math.max(maxY, wire.start.y, wire.end.y)
+  })
+
+  rectangles.forEach(rect => {
+    minX = Math.min(minX, rect.start.x, rect.end.x)
+    minY = Math.min(minY, rect.start.y, rect.end.y)
+    maxX = Math.max(maxX, rect.start.x, rect.end.x)
+    maxY = Math.max(maxY, rect.start.y, rect.end.y)
   })
 
   components.forEach(comp => {
@@ -125,6 +138,23 @@ function generateWiresSVG(wires, effectiveWireColor, invertColors) {
   return svg
 }
 
+// Generate SVG for rectangles
+function generateRectanglesSVG(rectangles, effectiveWireColor, invertColors) {
+  let svg = ''
+  rectangles.forEach(rect => {
+    let strokeColor = effectiveWireColor || rect.color
+    if (invertColors) {
+      strokeColor = invertColor(strokeColor)
+    }
+    const x = Math.min(rect.start.x, rect.end.x)
+    const y = Math.min(rect.start.y, rect.end.y)
+    const width = Math.abs(rect.end.x - rect.start.x)
+    const height = Math.abs(rect.end.y - rect.start.y)
+    svg += `    <rect x="${x}" y="${y}" width="${width}" height="${height}" stroke="${strokeColor}" stroke-width="${rect.thickness}" fill="none"/>\n`
+  })
+  return svg
+}
+
 // Generate SVG for a single component
 function generateComponentSVG(comp, def, componentToSVG, effectiveWireColor, invertColors) {
   let colorOverride = effectiveWireColor
@@ -167,7 +197,7 @@ function generateComponentsSVG(components, getComponentByType, componentToSVG, e
 }
 
 // Export to SVG
-export async function exportToSVG(wires, components, getComponentByType, options = {}) {
+export async function exportToSVG(wires, rectangles, components, getComponentByType, options = {}) {
   const {
     useWireColor = false,
     wireColor = null,
@@ -183,13 +213,13 @@ export async function exportToSVG(wires, components, getComponentByType, options
   const { componentToSVG } = await import('./canvasToSVG.js')
 
   // Check if there's anything to export
-  if (wires.length === 0 && components.length === 0) {
+  if (wires.length === 0 && rectangles.length === 0 && components.length === 0) {
     alert('エクスポートする内容がありません。')
     return
   }
 
   // Calculate bounds
-  const { minX, maxX, minY, maxY } = calculateBounds(wires, components, getComponentByType)
+  const { minX, maxX, minY, maxY } = calculateBounds(wires, rectangles, components, getComponentByType)
 
   const padding = 50
   const gridSize = 20
@@ -209,6 +239,7 @@ ${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroun
     svg += generateGridSVG(minX, minY, maxX, maxY, gridSize)
   }
 
+  svg += generateRectanglesSVG(rectangles, effectiveWireColor, invertColors)
   svg += generateWiresSVG(wires, effectiveWireColor, invertColors)
   svg += generateComponentsSVG(components, getComponentByType, componentToSVG, effectiveWireColor, invertColors)
 
@@ -258,7 +289,7 @@ ${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroun
 }
 
 // Export to PNG
-export function exportToPNG(wires, components, getComponentByType, canvasRef, options = {}) {
+export function exportToPNG(wires, rectangles, components, getComponentByType, canvasRef, options = {}) {
   const {
     useWireColor = false,
     wireColor = null,
@@ -275,7 +306,7 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
   const ctx = tempCanvas.getContext('2d', { alpha: true })
 
   // Check if there's anything to export
-  if (wires.length === 0 && components.length === 0) {
+  if (wires.length === 0 && rectangles.length === 0 && components.length === 0) {
     alert('エクスポートする内容がありません。')
     return
   }
@@ -288,6 +319,13 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
     minY = Math.min(minY, wire.start.y, wire.end.y)
     maxX = Math.max(maxX, wire.start.x, wire.end.x)
     maxY = Math.max(maxY, wire.start.y, wire.end.y)
+  })
+
+  rectangles.forEach(rect => {
+    minX = Math.min(minX, rect.start.x, rect.end.x)
+    minY = Math.min(minY, rect.start.y, rect.end.y)
+    maxX = Math.max(maxX, rect.start.x, rect.end.x)
+    maxY = Math.max(maxY, rect.start.y, rect.end.y)
   })
 
   components.forEach(comp => {
@@ -347,6 +385,27 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
     }
     ctx.stroke()
   }
+
+  // Draw rectangles
+  rectangles.forEach(rect => {
+    let strokeColor = effectiveWireColor || rect.color
+    if (invertColors) {
+      strokeColor = invertColor(strokeColor)
+    }
+    ctx.strokeStyle = strokeColor
+    ctx.lineWidth = rect.thickness
+    ctx.lineCap = 'square'
+    ctx.lineJoin = 'miter'
+
+    const x = Math.min(rect.start.x, rect.end.x)
+    const y = Math.min(rect.start.y, rect.end.y)
+    const width = Math.abs(rect.end.x - rect.start.x)
+    const height = Math.abs(rect.end.y - rect.start.y)
+
+    ctx.beginPath()
+    ctx.rect(x, y, width, height)
+    ctx.stroke()
+  })
 
   // Draw wires
   wires.forEach(wire => {
@@ -432,10 +491,11 @@ export function exportToPNG(wires, components, getComponentByType, canvasRef, op
 }
 
 // Save to localStorage
-export function saveToLocalStorage(wires, components) {
+export function saveToLocalStorage(wires, rectangles, components) {
   const project = {
     version: '1.0',
     wires,
+    rectangles,
     components,
     savedAt: new Date().toISOString()
   }
