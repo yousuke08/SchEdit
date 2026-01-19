@@ -16,6 +16,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
   const [drawingRect, setDrawingRect] = useState(null)
   const [currentMousePos, setCurrentMousePos] = useState(null)
   const [draggingComponent, setDraggingComponent] = useState(null)
+  const [draggingWireBody, setDraggingWireBody] = useState(null)
   const [draggingRect, setDraggingRect] = useState(null)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [selectionBox, setSelectionBox] = useState(null)
@@ -150,9 +151,28 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       const width = Math.abs(rect.end.x - rect.start.x)
       const height = Math.abs(rect.end.y - rect.start.y)
 
+      const rectStyle = rect.style || 'solid'
+
+      // Apply line style
+      switch (rectStyle) {
+        case 'solid':
+          ctx.setLineDash([])
+          break
+        case 'dashed':
+          ctx.setLineDash([10, 5])
+          break
+        case 'dash-dot':
+          ctx.setLineDash([15, 5, 3, 5])
+          break
+        default:
+          ctx.setLineDash([])
+      }
+
       ctx.beginPath()
       ctx.rect(x, y, width, height)
       ctx.stroke()
+
+      ctx.setLineDash([])
 
       // Draw corner points if selected
       if (isSelected) {
@@ -362,7 +382,21 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       ctx.lineWidth = wireThickness
       ctx.lineCap = 'square'
       ctx.lineJoin = 'miter'
-      ctx.setLineDash([5, 5])
+
+      // Show preview with current style, but with dashed overlay
+      switch (wireStyle) {
+        case 'solid':
+          ctx.setLineDash([5, 5])
+          break
+        case 'dashed':
+          ctx.setLineDash([10, 5])
+          break
+        case 'dash-dot':
+          ctx.setLineDash([15, 5, 3, 5])
+          break
+        default:
+          ctx.setLineDash([5, 5])
+      }
 
       ctx.beginPath()
       ctx.rect(x, y, width, height)
@@ -437,7 +471,8 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
             start: drawingRect,
             end: snappedPos,
             color: wireColor,
-            thickness: wireThickness
+            thickness: wireThickness,
+            style: wireStyle
           })
         }
         setDrawingRect(null)
@@ -672,6 +707,13 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
           // Start dragging selected items
           setDraggingSelection(true)
           setSelectionDragStart(worldPos)
+        } else if (clickedWire.id === selectedWireId) {
+          // Single selected wire - start dragging it
+          setDraggingWireBody(clickedWire.id)
+          setDragOffset({
+            x: worldPos.x - clickedWire.start.x,
+            y: worldPos.y - clickedWire.start.y
+          })
         } else {
           // Select wire
           setSelectedWire(clickedWire.id)
@@ -833,6 +875,27 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       })
     }
 
+    if (draggingWireBody) {
+      const wire = wires.find(w => w.id === draggingWireBody)
+      if (wire) {
+        const newStartX = worldPos.x - dragOffset.x
+        const newStartY = worldPos.y - dragOffset.y
+        const dx = newStartX - wire.start.x
+        const dy = newStartY - wire.start.y
+
+        updateWireWithoutHistory(draggingWireBody, {
+          start: {
+            x: wire.start.x + dx,
+            y: wire.start.y + dy
+          },
+          end: {
+            x: wire.end.x + dx,
+            y: wire.end.y + dy
+          }
+        })
+      }
+    }
+
     if (draggingRect) {
       const rect = rectangles.find(r => r.id === draggingRect)
       if (rect) {
@@ -859,9 +922,27 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     setIsPanning(false)
 
     // Save history if any dragging operation was performed
-    const wasDragging = draggingComponent || draggingRect || draggingSelection || draggingWireEnd || draggingRectCorner
+    const wasDragging = draggingComponent || draggingWireBody || draggingRect || draggingSelection || draggingWireEnd || draggingRectCorner
 
     setDraggingComponent(null)
+
+    // Snap wire to grid after dragging
+    if (draggingWireBody) {
+      const wire = wires.find(w => w.id === draggingWireBody)
+      if (wire) {
+        updateWireWithoutHistory(draggingWireBody, {
+          start: {
+            x: snapToGrid(wire.start.x),
+            y: snapToGrid(wire.start.y)
+          },
+          end: {
+            x: snapToGrid(wire.end.x),
+            y: snapToGrid(wire.end.y)
+          }
+        })
+      }
+    }
+    setDraggingWireBody(null)
 
     // Snap rectangle to grid after dragging
     if (draggingRect) {

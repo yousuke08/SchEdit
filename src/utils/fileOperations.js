@@ -35,7 +35,8 @@ export function saveProjectToJSON(wires, components, rectangles = []) {
       start: rect.start,
       end: rect.end,
       color: rect.color,
-      thickness: rect.thickness
+      thickness: rect.thickness,
+      style: rect.style || 'solid'
     })),
     components: components.map(comp => ({
       type: comp.type,
@@ -150,7 +151,21 @@ function generateRectanglesSVG(rectangles, effectiveWireColor, invertColors) {
     const y = Math.min(rect.start.y, rect.end.y)
     const width = Math.abs(rect.end.x - rect.start.x)
     const height = Math.abs(rect.end.y - rect.start.y)
-    svg += `    <rect x="${x}" y="${y}" width="${width}" height="${height}" stroke="${strokeColor}" stroke-width="${rect.thickness}" fill="none"/>\n`
+    const rectStyle = rect.style || 'solid'
+
+    let strokeDasharray = ''
+    switch (rectStyle) {
+      case 'dashed':
+        strokeDasharray = ' stroke-dasharray="10,5"'
+        break
+      case 'dash-dot':
+        strokeDasharray = ' stroke-dasharray="15,5,3,5"'
+        break
+      default:
+        strokeDasharray = ''
+    }
+
+    svg += `    <rect x="${x}" y="${y}" width="${width}" height="${height}" stroke="${strokeColor}" stroke-width="${rect.thickness}"${strokeDasharray} fill="none"/>\n`
   })
   return svg
 }
@@ -402,9 +417,28 @@ export function exportToPNG(wires, rectangles, components, getComponentByType, c
     const width = Math.abs(rect.end.x - rect.start.x)
     const height = Math.abs(rect.end.y - rect.start.y)
 
+    const rectStyle = rect.style || 'solid'
+
+    // Apply line style
+    switch (rectStyle) {
+      case 'solid':
+        ctx.setLineDash([])
+        break
+      case 'dashed':
+        ctx.setLineDash([10, 5])
+        break
+      case 'dash-dot':
+        ctx.setLineDash([15, 5, 3, 5])
+        break
+      default:
+        ctx.setLineDash([])
+    }
+
     ctx.beginPath()
     ctx.rect(x, y, width, height)
     ctx.stroke()
+
+    ctx.setLineDash([])
   })
 
   // Draw wires
