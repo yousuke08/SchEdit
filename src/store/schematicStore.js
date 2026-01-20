@@ -18,6 +18,9 @@ const useSchematicStore = create((set, get) => ({
   wireColor: '#ffffff',
   wireThickness: 2,
   wireStyle: 'solid', // 'solid', 'double', 'dashed', 'dash-dot', 'wavy', 'double-wavy'
+  // Arrow settings: type = 'none' | 'triangle' | 'circle', fill = 'wire' | 'black' | 'white', inward = boolean
+  wireArrowStart: { type: 'none', fill: 'wire', inward: false },
+  wireArrowEnd: { type: 'none', fill: 'wire', inward: false },
   drawingMode: 'line', // 'line' or 'rect'
   clipboard: { components: [], wires: [], rectangles: [], textBoxes: [] },
   history: [],
@@ -143,6 +146,10 @@ const useSchematicStore = create((set, get) => ({
   setWireThickness: (thickness) => set({ wireThickness: thickness }),
 
   setWireStyle: (style) => set({ wireStyle: style }),
+
+  setWireArrowStart: (arrowStart) => set({ wireArrowStart: arrowStart }),
+
+  setWireArrowEnd: (arrowEnd) => set({ wireArrowEnd: arrowEnd }),
 
   addRectangle: (rect) => {
     set((state) => ({

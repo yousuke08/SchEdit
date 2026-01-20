@@ -29,7 +29,10 @@ export function saveProjectToJSON(wires, components, rectangles = [], textBoxes 
       start: wire.start,
       end: wire.end,
       color: wire.color,
-      thickness: wire.thickness
+      thickness: wire.thickness,
+      style: wire.style || 'solid',
+      arrowStart: wire.arrowStart || null,
+      arrowEnd: wire.arrowEnd || null
     })),
     rectangles: rectangles.map(rect => ({
       start: rect.start,
@@ -145,15 +148,83 @@ function generateGridSVG(minX, minY, maxX, maxY, gridSize) {
   return svg
 }
 
+// Generate SVG arrow marker
+function generateArrowSVG(point, angle, arrowConfig, wireColor, thickness, backgroundColor) {
+  if (!arrowConfig || arrowConfig.type === 'none') return ''
+
+  const size = Math.max(thickness * 4, 10)
+  const arrowAngle = arrowConfig.inward ? angle + Math.PI : angle
+  const angleDeg = arrowAngle * 180 / Math.PI
+
+  let svg = ''
+
+  if (arrowConfig.type === 'triangle') {
+    const points = [
+      [0, 0],
+      [-size, -size / 2],
+      [-size, size / 2]
+    ].map(([x, y]) => `${x},${y}`).join(' ')
+
+    let fill = 'none'
+    let stroke = wireColor
+    let strokeWidth = thickness
+
+    if (arrowConfig.fill === 'filled') {
+      // 中塗り - 線色で塗りつぶし + 線色でアウトライン
+      fill = wireColor
+    } else if (arrowConfig.fill === 'hollow') {
+      // 中抜き - 背景色で塗りつぶし + 線色でアウトライン
+      fill = backgroundColor
+    }
+
+    svg += `    <polygon points="${points}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" transform="translate(${point.x}, ${point.y}) rotate(${angleDeg})"/>\n`
+  } else if (arrowConfig.type === 'circle') {
+    const radius = size / 2
+
+    let fill = 'none'
+    let stroke = wireColor
+    let strokeWidth = thickness
+
+    if (arrowConfig.fill === 'filled') {
+      // 中塗り - 線色で塗りつぶし + 線色でアウトライン
+      fill = wireColor
+    } else if (arrowConfig.fill === 'hollow') {
+      // 中抜き - 背景色で塗りつぶし + 線色でアウトライン
+      fill = backgroundColor
+    }
+
+    svg += `    <circle cx="${-radius}" cy="0" r="${radius}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" transform="translate(${point.x}, ${point.y}) rotate(${angleDeg})"/>\n`
+  }
+
+  return svg
+}
+
 // Generate SVG for wires
-function generateWiresSVG(wires, effectiveWireColor, invertColors) {
+function generateWiresSVG(wires, effectiveWireColor, invertColors, backgroundColor) {
   let svg = ''
   wires.forEach(wire => {
     let strokeColor = effectiveWireColor || wire.color
     if (invertColors) {
       strokeColor = invertColor(strokeColor)
     }
+
+    // Draw the line
     svg += `    <line x1="${wire.start.x}" y1="${wire.start.y}" x2="${wire.end.x}" y2="${wire.end.y}" stroke="${strokeColor}" stroke-width="${wire.thickness}" stroke-linecap="round"/>\n`
+
+    // Calculate line angle
+    const dx = wire.end.x - wire.start.x
+    const dy = wire.end.y - wire.start.y
+    const lineAngle = Math.atan2(dy, dx)
+
+    // Draw start arrow (pointing toward start, so angle + PI)
+    if (wire.arrowStart) {
+      svg += generateArrowSVG(wire.start, lineAngle + Math.PI, wire.arrowStart, strokeColor, wire.thickness, backgroundColor)
+    }
+
+    // Draw end arrow (pointing toward end)
+    if (wire.arrowEnd) {
+      svg += generateArrowSVG(wire.end, lineAngle, wire.arrowEnd, strokeColor, wire.thickness, backgroundColor)
+    }
   })
   return svg
 }
@@ -304,7 +375,7 @@ ${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroun
   }
 
   svg += generateRectanglesSVG(rectangles, effectiveWireColor, invertColors)
-  svg += generateWiresSVG(wires, effectiveWireColor, invertColors)
+  svg += generateWiresSVG(wires, effectiveWireColor, invertColors, backgroundColor)
   svg += generateTextBoxesSVG(textBoxes, effectiveWireColor, invertColors)
   svg += generateComponentsSVG(components, getComponentByType, componentToSVG, effectiveWireColor, invertColors)
 
@@ -502,6 +573,74 @@ export function exportToPNG(wires, rectangles, textBoxes, components, getCompone
     ctx.setLineDash([])
   })
 
+  // Helper function to draw arrow
+  const drawArrow = (point, angle, arrowConfig, wireColor, thickness) => {
+    if (!arrowConfig || arrowConfig.type === 'none') return
+
+    const size = Math.max(thickness * 4, 10)
+    const arrowAngle = arrowConfig.inward ? angle + Math.PI : angle
+
+    ctx.save()
+    ctx.translate(point.x, point.y)
+    ctx.rotate(arrowAngle)
+
+    if (arrowConfig.type === 'triangle') {
+      ctx.beginPath()
+      ctx.moveTo(0, 0)
+      ctx.lineTo(-size, -size / 2)
+      ctx.lineTo(-size, size / 2)
+      ctx.closePath()
+
+      if (arrowConfig.fill === 'filled') {
+        // 中塗り - 線色で塗りつぶし + 線色でアウトライン
+        ctx.fillStyle = wireColor
+        ctx.fill()
+        ctx.strokeStyle = wireColor
+        ctx.lineWidth = thickness
+        ctx.stroke()
+      } else if (arrowConfig.fill === 'hollow') {
+        // 中抜き - 背景色で塗りつぶし + 線色でアウトライン
+        ctx.fillStyle = backgroundColor
+        ctx.fill()
+        ctx.strokeStyle = wireColor
+        ctx.lineWidth = thickness
+        ctx.stroke()
+      } else {
+        // wire - アウトラインのみ
+        ctx.strokeStyle = wireColor
+        ctx.lineWidth = thickness
+        ctx.stroke()
+      }
+    } else if (arrowConfig.type === 'circle') {
+      const radius = size / 2
+      ctx.beginPath()
+      ctx.arc(-radius, 0, radius, 0, Math.PI * 2)
+
+      if (arrowConfig.fill === 'filled') {
+        // 中塗り - 線色で塗りつぶし + 線色でアウトライン
+        ctx.fillStyle = wireColor
+        ctx.fill()
+        ctx.strokeStyle = wireColor
+        ctx.lineWidth = thickness
+        ctx.stroke()
+      } else if (arrowConfig.fill === 'hollow') {
+        // 中抜き - 背景色で塗りつぶし + 線色でアウトライン
+        ctx.fillStyle = backgroundColor
+        ctx.fill()
+        ctx.strokeStyle = wireColor
+        ctx.lineWidth = thickness
+        ctx.stroke()
+      } else {
+        // wire - アウトラインのみ
+        ctx.strokeStyle = wireColor
+        ctx.lineWidth = thickness
+        ctx.stroke()
+      }
+    }
+
+    ctx.restore()
+  }
+
   // Draw wires
   wires.forEach(wire => {
     let strokeColor = effectiveWireColor || wire.color
@@ -515,6 +654,21 @@ export function exportToPNG(wires, rectangles, textBoxes, components, getCompone
     ctx.moveTo(wire.start.x, wire.start.y)
     ctx.lineTo(wire.end.x, wire.end.y)
     ctx.stroke()
+
+    // Calculate line angle
+    const dx = wire.end.x - wire.start.x
+    const dy = wire.end.y - wire.start.y
+    const lineAngle = Math.atan2(dy, dx)
+
+    // Draw start arrow (pointing toward start, so angle + PI)
+    if (wire.arrowStart) {
+      drawArrow(wire.start, lineAngle + Math.PI, wire.arrowStart, strokeColor, wire.thickness)
+    }
+
+    // Draw end arrow (pointing toward end)
+    if (wire.arrowEnd) {
+      drawArrow(wire.end, lineAngle, wire.arrowEnd, strokeColor, wire.thickness)
+    }
   })
 
   // Draw text boxes

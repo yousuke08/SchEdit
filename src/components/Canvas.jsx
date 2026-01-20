@@ -44,6 +44,8 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     wireColor,
     wireThickness,
     wireStyle,
+    wireArrowStart,
+    wireArrowEnd,
     rectangles,
     addRectangle,
     selectedRectId,
@@ -334,6 +336,91 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
 
       drawWireWithStyle(wire.start, wire.end, wireStyle)
 
+      // Draw arrows
+      const drawArrow = (point, angle, arrowConfig, isStart) => {
+        if (!arrowConfig || arrowConfig.type === 'none') return
+
+        const size = Math.max(wire.thickness * 4, 10)
+        const arrowAngle = arrowConfig.inward ? angle + Math.PI : angle
+
+        ctx.save()
+        ctx.translate(point.x, point.y)
+        ctx.rotate(arrowAngle)
+
+        const wireColor = isSelected ? '#ffff00' : wire.color
+
+        if (arrowConfig.type === 'triangle') {
+          ctx.beginPath()
+          ctx.moveTo(0, 0)
+          ctx.lineTo(-size, -size / 2)
+          ctx.lineTo(-size, size / 2)
+          ctx.closePath()
+
+          if (arrowConfig.fill === 'filled') {
+            // 中塗り - 線色で塗りつぶし + 線色でアウトライン
+            ctx.fillStyle = wireColor
+            ctx.fill()
+            ctx.strokeStyle = wireColor
+            ctx.lineWidth = wire.thickness
+            ctx.stroke()
+          } else if (arrowConfig.fill === 'hollow') {
+            // 中抜き - 背景色で塗りつぶし + 線色でアウトライン
+            ctx.fillStyle = '#1a1a1a'
+            ctx.fill()
+            ctx.strokeStyle = wireColor
+            ctx.lineWidth = wire.thickness
+            ctx.stroke()
+          } else {
+            // wire - アウトラインのみ
+            ctx.strokeStyle = wireColor
+            ctx.lineWidth = wire.thickness
+            ctx.stroke()
+          }
+        } else if (arrowConfig.type === 'circle') {
+          const radius = size / 2
+          ctx.beginPath()
+          ctx.arc(-radius, 0, radius, 0, Math.PI * 2)
+
+          if (arrowConfig.fill === 'filled') {
+            // 中塗り - 線色で塗りつぶし + 線色でアウトライン
+            ctx.fillStyle = wireColor
+            ctx.fill()
+            ctx.strokeStyle = wireColor
+            ctx.lineWidth = wire.thickness
+            ctx.stroke()
+          } else if (arrowConfig.fill === 'hollow') {
+            // 中抜き - 背景色で塗りつぶし + 線色でアウトライン
+            ctx.fillStyle = '#1a1a1a'
+            ctx.fill()
+            ctx.strokeStyle = wireColor
+            ctx.lineWidth = wire.thickness
+            ctx.stroke()
+          } else {
+            // wire - アウトラインのみ
+            ctx.strokeStyle = wireColor
+            ctx.lineWidth = wire.thickness
+            ctx.stroke()
+          }
+        }
+
+        ctx.restore()
+      }
+
+      // Calculate line angle
+      const dx = wire.end.x - wire.start.x
+      const dy = wire.end.y - wire.start.y
+      const lineAngle = Math.atan2(dy, dx)
+
+      // Draw start arrow (pointing toward start, so angle + PI)
+      if (wire.arrowStart) {
+        drawArrow(wire.start, lineAngle + Math.PI, wire.arrowStart, true)
+      }
+
+      // Draw end arrow (pointing toward end)
+      if (wire.arrowEnd) {
+        drawArrow(wire.end, lineAngle, wire.arrowEnd, false)
+      }
+
       // Draw endpoints
       if (isSelected) {
         ctx.fillStyle = '#ffff00'
@@ -519,7 +606,9 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
               end: snappedPos,
               color: wireColor,
               thickness: wireThickness,
-              style: wireStyle
+              style: wireStyle,
+              arrowStart: wireArrowStart,
+              arrowEnd: wireArrowEnd
             })
           }
         }

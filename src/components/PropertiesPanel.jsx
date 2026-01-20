@@ -13,9 +13,13 @@ function PropertiesPanel() {
     wireColor,
     wireThickness,
     wireStyle,
+    wireArrowStart,
+    wireArrowEnd,
     setWireColor,
     setWireThickness,
     setWireStyle,
+    setWireArrowStart,
+    setWireArrowEnd,
     updateWire,
     updateRectangle,
     updateTextBox
@@ -29,12 +33,18 @@ function PropertiesPanel() {
   const [localThickness, setLocalThickness] = useState(wireThickness)
   const [localStyle, setLocalStyle] = useState(wireStyle)
   const [localFontSize, setLocalFontSize] = useState(16)
+  const [localArrowStart, setLocalArrowStart] = useState(wireArrowStart)
+  const [localArrowEnd, setLocalArrowEnd] = useState(wireArrowEnd)
+
+  const defaultArrow = { type: 'none', fill: 'wire', inward: false }
 
   useEffect(() => {
     if (selectedWire) {
       setLocalColor(selectedWire.color)
       setLocalThickness(selectedWire.thickness)
       setLocalStyle(selectedWire.style || 'solid')
+      setLocalArrowStart(selectedWire.arrowStart || defaultArrow)
+      setLocalArrowEnd(selectedWire.arrowEnd || defaultArrow)
     } else if (selectedRect) {
       setLocalColor(selectedRect.color)
       setLocalThickness(selectedRect.thickness)
@@ -46,8 +56,10 @@ function PropertiesPanel() {
       setLocalColor(wireColor)
       setLocalThickness(wireThickness)
       setLocalStyle(wireStyle)
+      setLocalArrowStart(wireArrowStart)
+      setLocalArrowEnd(wireArrowEnd)
     }
-  }, [selectedWire, selectedRect, selectedTextBox, wireColor, wireThickness, wireStyle])
+  }, [selectedWire, selectedRect, selectedTextBox, wireColor, wireThickness, wireStyle, wireArrowStart, wireArrowEnd])
 
   const handleColorChange = (color) => {
     setLocalColor(color)
@@ -103,6 +115,60 @@ function PropertiesPanel() {
     }
   }
 
+  const handleArrowStartChange = (key, value) => {
+    const newArrow = { ...localArrowStart, [key]: value }
+    setLocalArrowStart(newArrow)
+    if (selectedWire) {
+      updateWire(selectedWire.id, { arrowStart: newArrow })
+    } else {
+      setWireArrowStart(newArrow)
+    }
+  }
+
+  const handleArrowEndChange = (key, value) => {
+    const newArrow = { ...localArrowEnd, [key]: value }
+    setLocalArrowEnd(newArrow)
+    if (selectedWire) {
+      updateWire(selectedWire.id, { arrowEnd: newArrow })
+    } else {
+      setWireArrowEnd(newArrow)
+    }
+  }
+
+  // Arrow settings UI component
+  const ArrowSettings = ({ label, arrow, onChange }) => (
+    <div className="arrow-settings">
+      <label className="arrow-label">{label}</label>
+      <div className="arrow-row">
+        <label>形状:</label>
+        <select value={arrow.type} onChange={(e) => onChange('type', e.target.value)}>
+          <option value="none">なし</option>
+          <option value="triangle">三角</option>
+          <option value="circle">丸</option>
+        </select>
+      </div>
+      {arrow.type !== 'none' && (
+        <>
+          <div className="arrow-row">
+            <label>塗り:</label>
+            <select value={arrow.fill} onChange={(e) => onChange('fill', e.target.value)}>
+              <option value="wire">線のみ</option>
+              <option value="hollow">中抜き</option>
+              <option value="filled">中塗り</option>
+            </select>
+          </div>
+          <div className="arrow-row">
+            <label>向き:</label>
+            <select value={arrow.inward ? 'inward' : 'outward'} onChange={(e) => onChange('inward', e.target.value === 'inward')}>
+              <option value="outward">外向き</option>
+              <option value="inward">内向き</option>
+            </select>
+          </div>
+        </>
+      )}
+    </div>
+  )
+
   if (!selectedWire && !selectedRect && !selectedTextBox) {
     return (
       <div className="properties-panel">
@@ -138,6 +204,8 @@ function PropertiesPanel() {
               <option value="double-wavy">2重波線</option>
             </select>
           </div>
+          <ArrowSettings label="始点矢印:" arrow={localArrowStart} onChange={handleArrowStartChange} />
+          <ArrowSettings label="終点矢印:" arrow={localArrowEnd} onChange={handleArrowEndChange} />
         </div>
       </div>
     )
@@ -264,6 +332,8 @@ function PropertiesPanel() {
             <option value="double-wavy">2重波線</option>
           </select>
         </div>
+        <ArrowSettings label="始点矢印:" arrow={localArrowStart} onChange={handleArrowStartChange} />
+        <ArrowSettings label="終点矢印:" arrow={localArrowEnd} onChange={handleArrowEndChange} />
         <div className="property-info">
           <p>開始点: ({selectedWire.start.x}, {selectedWire.start.y})</p>
           <p>終了点: ({selectedWire.end.x}, {selectedWire.end.y})</p>
