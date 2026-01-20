@@ -56,6 +56,7 @@ function App() {
         showGrid={showGrid}
         setShowGrid={setShowGrid}
         canvasRef={canvasRef}
+        onAddTextBox={() => canvasRef.current?.openTextDialog()}
       />
       <div className="main-container">
         <Sidebar position="left" title="部品">

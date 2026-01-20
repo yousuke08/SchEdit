@@ -5,6 +5,7 @@ import useSchematicStore from '../store/schematicStore'
 import { distanceToLineSegment } from '../utils/geometry'
 import { shouldCreateWire } from '../utils/wireUtils'
 import { getComponentByType } from './componentLibrary'
+import TextEditDialog from './TextEditDialog'
 
 const Canvas = forwardRef(({ showGrid }, ref) => {
   const canvasRef = useRef(null)
@@ -18,6 +19,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
   const [draggingComponent, setDraggingComponent] = useState(null)
   const [draggingWireBody, setDraggingWireBody] = useState(null)
   const [draggingRect, setDraggingRect] = useState(null)
+  const [draggingTextBox, setDraggingTextBox] = useState(null)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [selectionBox, setSelectionBox] = useState(null)
   const [isMouseDownInSelectMode, setIsMouseDownInSelectMode] = useState(false)
@@ -27,6 +29,9 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
   const [lastClickPos, setLastClickPos] = useState(null)
   const [draggingWireEnd, setDraggingWireEnd] = useState(null) // { wireId, endpoint: 'start' | 'end' }
   const [draggingRectCorner, setDraggingRectCorner] = useState(null) // { rectId, corner: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight' }
+  const [showTextDialog, setShowTextDialog] = useState(false)
+  const [textDialogPos, setTextDialogPos] = useState(null)
+  const [editingTextBoxId, setEditingTextBoxId] = useState(null)
 
   const {
     wires,
@@ -46,6 +51,13 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     removeRectangle,
     updateRectangle,
     updateRectangleWithoutHistory,
+    textBoxes,
+    addTextBox,
+    selectedTextBoxId,
+    setSelectedTextBox,
+    removeTextBox,
+    updateTextBox,
+    updateTextBoxWithoutHistory,
     drawingMode,
     components,
     addComponent,
@@ -56,6 +68,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     updateComponentWithoutHistory,
     selectedWireIds,
     selectedRectIds,
+    selectedTextBoxIds,
     selectedComponentIds,
     setMultipleSelection,
     clearSelection,
@@ -89,6 +102,20 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
 
       setZoom(newZoom)
       setPan({ x: newPanX, y: newPanY })
+    },
+    openTextDialog: () => {
+      // Open text dialog at center of visible canvas area
+      const canvas = canvasRef.current
+      if (!canvas) return
+      const rect = canvas.getBoundingClientRect()
+      const centerX = rect.width / 2
+      const centerY = rect.height / 2
+      const worldPos = screenToWorld({ x: centerX, y: centerY }, pan, zoom)
+      const snappedX = snapToGrid(worldPos.x)
+      const snappedY = snapToGrid(worldPos.y)
+      setTextDialogPos({ x: snappedX, y: snappedY })
+      setEditingTextBoxId(null)
+      setShowTextDialog(true)
     }
   }))
 
@@ -340,6 +367,45 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       ctx.restore()
     })
 
+    // Draw text boxes
+    textBoxes.forEach(textBox => {
+      const isSelected = textBox.id === selectedTextBoxId || selectedTextBoxIds.includes(textBox.id)
+      ctx.fillStyle = textBox.color || '#ffffff'
+      ctx.font = `${textBox.fontSize || 16}px sans-serif`
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'top'
+
+      const lines = textBox.text.split('\n')
+      const lineHeight = (textBox.fontSize || 16) * 1.2
+
+      lines.forEach((line, index) => {
+        ctx.fillText(line, textBox.x, textBox.y + index * lineHeight)
+      })
+
+      // Draw selection box if selected
+      if (isSelected) {
+        ctx.save()
+        ctx.strokeStyle = '#ffff00'
+        ctx.lineWidth = 2 / zoom
+        ctx.setLineDash([5 / zoom, 5 / zoom])
+
+        // Measure text bounds
+        const textMetrics = ctx.measureText(textBox.text)
+        const textWidth = Math.max(...lines.map(line => ctx.measureText(line).width))
+        const textHeight = lines.length * lineHeight
+
+        ctx.strokeRect(
+          textBox.x - 5,
+          textBox.y - 5,
+          textWidth + 10,
+          textHeight + 10
+        )
+
+        ctx.setLineDash([])
+        ctx.restore()
+      }
+    })
+
     // Draw wire being drawn
     if (drawingWire && currentMousePos) {
       const canvas = canvasRef.current
@@ -422,7 +488,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     }
 
     ctx.restore()
-  }, [showGrid, zoom, pan, wires, rectangles, selectedWireId, selectedRectId, drawingWire, drawingRect, currentMousePos, wireColor, wireThickness, components, selectedComponentId, selectedWireIds, selectedRectIds, selectedComponentIds, selectionBox])
+  }, [showGrid, zoom, pan, wires, rectangles, textBoxes, selectedWireId, selectedRectId, selectedTextBoxId, drawingWire, drawingRect, currentMousePos, wireColor, wireThickness, components, selectedComponentId, selectedWireIds, selectedRectIds, selectedTextBoxIds, selectedComponentIds, selectionBox])
 
   const handleMouseDown = (e) => {
     if (e.button === 1 || (e.button === 0 && e.shiftKey)) { // Middle button or Shift+Left
@@ -486,6 +552,48 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       }
 
       setIsMouseDownInSelectMode(true)
+
+      // Check if clicking on text box first
+      let clickedTextBox = null
+      const canvasEl = canvasRef.current
+      const ctx = canvasEl.getContext('2d')
+      for (const textBox of [...textBoxes].reverse()) {
+        ctx.font = `${textBox.fontSize || 16}px sans-serif`
+        const lines = textBox.text.split('\n')
+        const lineHeight = (textBox.fontSize || 16) * 1.2
+        const textWidth = Math.max(...lines.map(line => ctx.measureText(line).width))
+        const textHeight = lines.length * lineHeight
+
+        if (
+          worldPos.x >= textBox.x - 5 &&
+          worldPos.x <= textBox.x + textWidth + 5 &&
+          worldPos.y >= textBox.y - 5 &&
+          worldPos.y <= textBox.y + textHeight + 5
+        ) {
+          clickedTextBox = textBox
+          break
+        }
+      }
+
+      if (clickedTextBox) {
+        // Check if text box is already selected
+        if (selectedTextBoxIds.includes(clickedTextBox.id)) {
+          // Start dragging selected items
+          setDraggingSelection(true)
+          setSelectionDragStart(worldPos)
+        } else if (clickedTextBox.id === selectedTextBoxId) {
+          // Single selected text box - start dragging it
+          setDraggingTextBox(clickedTextBox.id)
+          setDragOffset({
+            x: worldPos.x - clickedTextBox.x,
+            y: worldPos.y - clickedTextBox.y
+          })
+        } else {
+          // Select text box
+          setSelectedTextBox(clickedTextBox.id)
+        }
+        return
+      }
 
       // Check if clicking on a component first
       let clickedComponent = null
@@ -861,6 +969,17 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         }
       })
 
+      // Move all selected text boxes (without snapping during drag)
+      selectedTextBoxIds.forEach(textBoxId => {
+        const textBox = textBoxes.find(t => t.id === textBoxId)
+        if (textBox) {
+          updateTextBoxWithoutHistory(textBoxId, {
+            x: textBox.x + dx,
+            y: textBox.y + dy
+          })
+        }
+      })
+
       setSelectionDragStart(worldPos)
     }
 
@@ -916,13 +1035,23 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         })
       }
     }
+
+    if (draggingTextBox) {
+      const newX = worldPos.x - dragOffset.x
+      const newY = worldPos.y - dragOffset.y
+
+      updateTextBoxWithoutHistory(draggingTextBox, {
+        x: newX,
+        y: newY
+      })
+    }
   }
 
   const handleMouseUp = () => {
     setIsPanning(false)
 
     // Save history if any dragging operation was performed
-    const wasDragging = draggingComponent || draggingWireBody || draggingRect || draggingSelection || draggingWireEnd || draggingRectCorner
+    const wasDragging = draggingComponent || draggingWireBody || draggingRect || draggingTextBox || draggingSelection || draggingWireEnd || draggingRectCorner
 
     setDraggingComponent(null)
 
@@ -961,6 +1090,18 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       }
     }
     setDraggingRect(null)
+
+    // Snap text box to grid after dragging
+    if (draggingTextBox) {
+      const textBox = textBoxes.find(t => t.id === draggingTextBox)
+      if (textBox) {
+        updateTextBoxWithoutHistory(draggingTextBox, {
+          x: snapToGrid(textBox.x),
+          y: snapToGrid(textBox.y)
+        })
+      }
+    }
+    setDraggingTextBox(null)
 
     // Snap selected items to grid after dragging
     if (draggingSelection) {
@@ -1005,6 +1146,16 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
           })
         }
       })
+
+      selectedTextBoxIds.forEach(textBoxId => {
+        const textBox = textBoxes.find(t => t.id === textBoxId)
+        if (textBox) {
+          updateTextBoxWithoutHistory(textBoxId, {
+            x: snapToGrid(textBox.x),
+            y: snapToGrid(textBox.y)
+          })
+        }
+      })
     }
 
     setDraggingSelection(false)
@@ -1027,6 +1178,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
 
       const selectedWires = []
       const selectedRects = []
+      const selectedTextBoxes = []
       const selectedComps = []
 
       // Select wires within box
@@ -1053,6 +1205,13 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         }
       })
 
+      // Select text boxes within box
+      textBoxes.forEach(textBox => {
+        if (textBox.x >= minX && textBox.x <= maxX && textBox.y >= minY && textBox.y <= maxY) {
+          selectedTextBoxes.push(textBox.id)
+        }
+      })
+
       // Select components within box
       components.forEach(comp => {
         if (comp.x >= minX && comp.x <= maxX && comp.y >= minY && comp.y <= maxY) {
@@ -1060,7 +1219,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         }
       })
 
-      setMultipleSelection(selectedWires, selectedRects, selectedComps)
+      setMultipleSelection(selectedWires, selectedRects, selectedTextBoxes, selectedComps)
       setSelectionBox(null)
     }
 
@@ -1071,12 +1230,16 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
   }
 
   const handleKeyDown = (e) => {
+    // Don't process keyboard events if text dialog is open
+    if (showTextDialog) return
+
     if (e.key === 'Escape') {
       setDrawingWire(null)
       setDrawingRect(null)
       setCurrentMousePos(null)
       setSelectedWire(null)
       setSelectedRect(null)
+      setSelectedTextBox(null)
       setSelectedComponent(null)
       setSelectionBox(null)
       clearSelection()
@@ -1084,7 +1247,7 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       e.preventDefault()
       const state = useSchematicStore.getState()
 
-      // Copy selected components, wires, and rectangles
+      // Copy selected components, wires, rectangles, and text boxes
       const selectedComps = state.selectedComponentIds
         .map(id => components.find(c => c.id === id))
         .filter(c => c)
@@ -1094,9 +1257,12 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       const selectedRects = state.selectedRectIds
         .map(id => rectangles.find(r => r.id === id))
         .filter(r => r)
+      const selectedTextBoxes = state.selectedTextBoxIds
+        .map(id => textBoxes.find(t => t.id === id))
+        .filter(t => t)
 
-      if (selectedComps.length > 0 || selectedWires.length > 0 || selectedRects.length > 0) {
-        copyToClipboard(selectedComps, selectedWires, selectedRects)
+      if (selectedComps.length > 0 || selectedWires.length > 0 || selectedRects.length > 0 || selectedTextBoxes.length > 0) {
+        copyToClipboard(selectedComps, selectedWires, selectedRects, selectedTextBoxes)
       }
     } else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
       e.preventDefault()
@@ -1118,6 +1284,11 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         clearSelection()
         return
       }
+      if (state.selectedTextBoxIds.length > 0) {
+        state.selectedTextBoxIds.forEach(id => removeTextBox(id))
+        clearSelection()
+        return
+      }
       if (state.selectedComponentIds.length > 0) {
         state.selectedComponentIds.forEach(id => removeComponent(id))
         clearSelection()
@@ -1129,6 +1300,8 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         removeWire(state.selectedWireId)
       } else if (state.selectedRectId) {
         removeRectangle(state.selectedRectId)
+      } else if (state.selectedTextBoxId) {
+        removeTextBox(state.selectedTextBoxId)
       } else if (state.selectedComponentId) {
         removeComponent(state.selectedComponentId)
       }
@@ -1284,8 +1457,35 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     e.preventDefault()
   }
 
+  const handleTextSave = (text, editingId) => {
+    if (editingId) {
+      // Update existing text box - use the id passed from dialog
+      const existingTextBox = textBoxes.find(t => t.id === editingId)
+      if (existingTextBox) {
+        updateTextBox(editingId, { text })
+      }
+    } else if (textDialogPos) {
+      // Add new text box
+      addTextBox({
+        x: textDialogPos.x,
+        y: textDialogPos.y,
+        text: text,
+        fontSize: 16,
+        color: wireColor
+      })
+    }
+  }
+
+  const handleTextClose = () => {
+    setShowTextDialog(false)
+    setEditingTextBoxId(null)
+    setTextDialogPos(null)
+  }
+
   const handleDoubleClick = (e) => {
     if (e.button !== 0) return
+    // Don't process double-clicks if text dialog is already open
+    if (showTextDialog) return
 
     const canvas = canvasRef.current
     const rect = canvas.getBoundingClientRect()
@@ -1295,24 +1495,53 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     }, pan, zoom)
     const snappedPos = { x: snapToGrid(worldPos.x), y: snapToGrid(worldPos.y) }
 
+    // Check if double-clicking on an existing text box
+    const canvasCtx = canvas.getContext('2d')
+    for (const textBox of textBoxes) {
+      canvasCtx.font = `${textBox.fontSize || 16}px sans-serif`
+      const lines = textBox.text.split('\n')
+      const lineHeight = (textBox.fontSize || 16) * 1.2
+      const textWidth = Math.max(...lines.map(line => canvasCtx.measureText(line).width))
+      const textHeight = lines.length * lineHeight
+
+      if (
+        worldPos.x >= textBox.x - 5 &&
+        worldPos.x <= textBox.x + textWidth + 5 &&
+        worldPos.y >= textBox.y - 5 &&
+        worldPos.y <= textBox.y + textHeight + 5
+      ) {
+        // Edit existing text box
+        setEditingTextBoxId(textBox.id)
+        setShowTextDialog(true)
+        return
+      }
+    }
+
     // Start drawing based on drawing mode
     if (drawingMode === 'line' && !drawingWire) {
       setDrawingWire(snappedPos)
       setSelectedWire(null)
       setSelectedRect(null)
+      setSelectedTextBox(null)
       setSelectedComponent(null)
     } else if (drawingMode === 'rect' && !drawingRect) {
       setDrawingRect(snappedPos)
       setSelectedWire(null)
       setSelectedRect(null)
+      setSelectedTextBox(null)
       setSelectedComponent(null)
+    } else if (!drawingWire && !drawingRect) {
+      // Add new text box if not in drawing mode
+      setTextDialogPos(snappedPos)
+      setEditingTextBoxId(null)
+      setShowTextDialog(true)
     }
   }
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedWireId, selectedComponentId, drawingWire, components])
+  }, [selectedWireId, selectedComponentId, drawingWire, components, showTextDialog])
 
   const handleWheel = (e) => {
     e.preventDefault()
@@ -1353,6 +1582,13 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
         onDragOver={handleDragOver}
         style={{ cursor: isPanning ? 'grabbing' : 'crosshair' }}
       ></canvas>
+      <TextEditDialog
+        isOpen={showTextDialog}
+        onClose={handleTextClose}
+        onSave={handleTextSave}
+        initialText={editingTextBoxId ? textBoxes.find(t => t.id === editingTextBoxId)?.text || '' : ''}
+        editingId={editingTextBoxId}
+      />
     </div>
   )
 })

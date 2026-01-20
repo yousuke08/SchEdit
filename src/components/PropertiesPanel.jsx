@@ -8,6 +8,8 @@ function PropertiesPanel() {
     wires,
     selectedRectId,
     rectangles,
+    selectedTextBoxId,
+    textBoxes,
     wireColor,
     wireThickness,
     wireStyle,
@@ -15,15 +17,18 @@ function PropertiesPanel() {
     setWireThickness,
     setWireStyle,
     updateWire,
-    updateRectangle
+    updateRectangle,
+    updateTextBox
   } = useSchematicStore()
 
   const selectedWire = wires.find(w => w.id === selectedWireId)
   const selectedRect = rectangles.find(r => r.id === selectedRectId)
+  const selectedTextBox = textBoxes.find(t => t.id === selectedTextBoxId)
 
   const [localColor, setLocalColor] = useState(wireColor)
   const [localThickness, setLocalThickness] = useState(wireThickness)
   const [localStyle, setLocalStyle] = useState(wireStyle)
+  const [localFontSize, setLocalFontSize] = useState(16)
 
   useEffect(() => {
     if (selectedWire) {
@@ -34,12 +39,15 @@ function PropertiesPanel() {
       setLocalColor(selectedRect.color)
       setLocalThickness(selectedRect.thickness)
       setLocalStyle(selectedRect.style || 'solid')
+    } else if (selectedTextBox) {
+      setLocalColor(selectedTextBox.color || '#ffffff')
+      setLocalFontSize(selectedTextBox.fontSize || 16)
     } else {
       setLocalColor(wireColor)
       setLocalThickness(wireThickness)
       setLocalStyle(wireStyle)
     }
-  }, [selectedWire, selectedRect, wireColor, wireThickness, wireStyle])
+  }, [selectedWire, selectedRect, selectedTextBox, wireColor, wireThickness, wireStyle])
 
   const handleColorChange = (color) => {
     setLocalColor(color)
@@ -47,8 +55,18 @@ function PropertiesPanel() {
       updateWire(selectedWire.id, { color })
     } else if (selectedRect) {
       updateRectangle(selectedRect.id, { color })
+    } else if (selectedTextBox) {
+      updateTextBox(selectedTextBox.id, { color })
     } else {
       setWireColor(color)
+    }
+  }
+
+  const handleFontSizeChange = (fontSize) => {
+    const value = parseInt(fontSize, 10)
+    setLocalFontSize(value)
+    if (selectedTextBox) {
+      updateTextBox(selectedTextBox.id, { fontSize: value })
     }
   }
 
@@ -85,7 +103,7 @@ function PropertiesPanel() {
     }
   }
 
-  if (!selectedWire && !selectedRect) {
+  if (!selectedWire && !selectedRect && !selectedTextBox) {
     return (
       <div className="properties-panel">
         <div className="property-group">
@@ -119,6 +137,39 @@ function PropertiesPanel() {
               <option value="wavy">波線</option>
               <option value="double-wavy">2重波線</option>
             </select>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (selectedTextBox) {
+    return (
+      <div className="properties-panel">
+        <div className="property-group">
+          <h4>選択中のテキスト</h4>
+          <div className="property-item">
+            <label>色:</label>
+            <input
+              type="color"
+              value={localColor}
+              onChange={(e) => handleColorChange(e.target.value)}
+            />
+          </div>
+          <div className="property-item">
+            <label>フォントサイズ:</label>
+            <input
+              type="range"
+              min="8"
+              max="48"
+              value={localFontSize}
+              onChange={(e) => handleFontSizeChange(e.target.value)}
+            />
+            <span>{localFontSize}px</span>
+          </div>
+          <div className="property-info">
+            <p>位置: ({selectedTextBox.x}, {selectedTextBox.y})</p>
+            <p>テキスト: {selectedTextBox.text.split('\n')[0]}{selectedTextBox.text.split('\n').length > 1 ? '...' : ''}</p>
           </div>
         </div>
       </div>

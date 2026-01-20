@@ -22,7 +22,7 @@ function invertColor(color) {
 }
 
 // Save project to JSON file
-export function saveProjectToJSON(wires, components, rectangles = []) {
+export function saveProjectToJSON(wires, components, rectangles = [], textBoxes = []) {
   const project = {
     version: '1.0',
     wires: wires.map(wire => ({
@@ -37,6 +37,13 @@ export function saveProjectToJSON(wires, components, rectangles = []) {
       color: rect.color,
       thickness: rect.thickness,
       style: rect.style || 'solid'
+    })),
+    textBoxes: textBoxes.map(textBox => ({
+      x: textBox.x,
+      y: textBox.y,
+      text: textBox.text,
+      fontSize: textBox.fontSize || 16,
+      color: textBox.color || '#ffffff'
     })),
     components: components.map(comp => ({
       type: comp.type,
@@ -73,8 +80,8 @@ export function loadProjectFromJSON(file, onLoad) {
   reader.readAsText(file)
 }
 
-// Calculate bounds of wires, rectangles, and components
-function calculateBounds(wires, rectangles, components, getComponentByType) {
+// Calculate bounds of wires, rectangles, text boxes, and components
+function calculateBounds(wires, rectangles, textBoxes, components, getComponentByType) {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
 
   wires.forEach(wire => {
@@ -89,6 +96,18 @@ function calculateBounds(wires, rectangles, components, getComponentByType) {
     minY = Math.min(minY, rect.start.y, rect.end.y)
     maxX = Math.max(maxX, rect.start.x, rect.end.x)
     maxY = Math.max(maxY, rect.start.y, rect.end.y)
+  })
+
+  textBoxes.forEach(textBox => {
+    // Rough estimate: 10px per character width, fontSize * 1.2 * lines for height
+    const lines = textBox.text.split('\n')
+    const textWidth = Math.max(...lines.map(line => line.length * (textBox.fontSize || 16) * 0.6))
+    const textHeight = lines.length * (textBox.fontSize || 16) * 1.2
+
+    minX = Math.min(minX, textBox.x)
+    minY = Math.min(minY, textBox.y)
+    maxX = Math.max(maxX, textBox.x + textWidth)
+    maxY = Math.max(maxY, textBox.y + textHeight)
   })
 
   components.forEach(comp => {
@@ -170,6 +189,36 @@ function generateRectanglesSVG(rectangles, effectiveWireColor, invertColors) {
   return svg
 }
 
+// Generate SVG for text boxes
+function generateTextBoxesSVG(textBoxes, effectiveWireColor, invertColors) {
+  let svg = ''
+  textBoxes.forEach(textBox => {
+    let fillColor = effectiveWireColor || textBox.color || '#ffffff'
+    if (invertColors) {
+      fillColor = invertColor(fillColor)
+    }
+    const lines = textBox.text.split('\n')
+    const fontSize = textBox.fontSize || 16
+    const lineHeight = fontSize * 1.2
+
+    lines.forEach((line, index) => {
+      const y = textBox.y + index * lineHeight + fontSize
+      svg += `    <text x="${textBox.x}" y="${y}" fill="${fillColor}" font-size="${fontSize}" font-family="sans-serif">${escapeXml(line)}</text>\n`
+    })
+  })
+  return svg
+}
+
+// Helper function to escape XML special characters
+function escapeXml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
 // Generate SVG for a single component
 function generateComponentSVG(comp, def, componentToSVG, effectiveWireColor, invertColors) {
   let colorOverride = effectiveWireColor
@@ -212,7 +261,7 @@ function generateComponentsSVG(components, getComponentByType, componentToSVG, e
 }
 
 // Export to SVG
-export async function exportToSVG(wires, rectangles, components, getComponentByType, options = {}) {
+export async function exportToSVG(wires, rectangles, textBoxes, components, getComponentByType, options = {}) {
   const {
     useWireColor = false,
     wireColor = null,
@@ -228,13 +277,13 @@ export async function exportToSVG(wires, rectangles, components, getComponentByT
   const { componentToSVG } = await import('./canvasToSVG.js')
 
   // Check if there's anything to export
-  if (wires.length === 0 && rectangles.length === 0 && components.length === 0) {
+  if (wires.length === 0 && rectangles.length === 0 && textBoxes.length === 0 && components.length === 0) {
     alert('エクスポートする内容がありません。')
     return
   }
 
   // Calculate bounds
-  const { minX, maxX, minY, maxY } = calculateBounds(wires, rectangles, components, getComponentByType)
+  const { minX, maxX, minY, maxY } = calculateBounds(wires, rectangles, textBoxes, components, getComponentByType)
 
   const padding = 50
   const gridSize = 20
@@ -256,6 +305,7 @@ ${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroun
 
   svg += generateRectanglesSVG(rectangles, effectiveWireColor, invertColors)
   svg += generateWiresSVG(wires, effectiveWireColor, invertColors)
+  svg += generateTextBoxesSVG(textBoxes, effectiveWireColor, invertColors)
   svg += generateComponentsSVG(components, getComponentByType, componentToSVG, effectiveWireColor, invertColors)
 
   svg += `  </g>
@@ -304,7 +354,7 @@ ${!transparentBackground ? `  <rect width="100%" height="100%" fill="${backgroun
 }
 
 // Export to PNG
-export function exportToPNG(wires, rectangles, components, getComponentByType, canvasRef, options = {}) {
+export function exportToPNG(wires, rectangles, textBoxes, components, getComponentByType, canvasRef, options = {}) {
   const {
     useWireColor = false,
     wireColor = null,
@@ -321,7 +371,7 @@ export function exportToPNG(wires, rectangles, components, getComponentByType, c
   const ctx = tempCanvas.getContext('2d', { alpha: true })
 
   // Check if there's anything to export
-  if (wires.length === 0 && rectangles.length === 0 && components.length === 0) {
+  if (wires.length === 0 && rectangles.length === 0 && textBoxes.length === 0 && components.length === 0) {
     alert('エクスポートする内容がありません。')
     return
   }
@@ -341,6 +391,17 @@ export function exportToPNG(wires, rectangles, components, getComponentByType, c
     minY = Math.min(minY, rect.start.y, rect.end.y)
     maxX = Math.max(maxX, rect.start.x, rect.end.x)
     maxY = Math.max(maxY, rect.start.y, rect.end.y)
+  })
+
+  textBoxes.forEach(textBox => {
+    const lines = textBox.text.split('\n')
+    const textWidth = Math.max(...lines.map(line => line.length * (textBox.fontSize || 16) * 0.6))
+    const textHeight = lines.length * (textBox.fontSize || 16) * 1.2
+
+    minX = Math.min(minX, textBox.x)
+    minY = Math.min(minY, textBox.y)
+    maxX = Math.max(maxX, textBox.x + textWidth)
+    maxY = Math.max(maxY, textBox.y + textHeight)
   })
 
   components.forEach(comp => {
@@ -456,6 +517,25 @@ export function exportToPNG(wires, rectangles, components, getComponentByType, c
     ctx.stroke()
   })
 
+  // Draw text boxes
+  textBoxes.forEach(textBox => {
+    let fillColor = effectiveWireColor || textBox.color || '#ffffff'
+    if (invertColors) {
+      fillColor = invertColor(fillColor)
+    }
+    ctx.fillStyle = fillColor
+    ctx.font = `${textBox.fontSize || 16}px sans-serif`
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'top'
+
+    const lines = textBox.text.split('\n')
+    const lineHeight = (textBox.fontSize || 16) * 1.2
+
+    lines.forEach((line, index) => {
+      ctx.fillText(line, textBox.x, textBox.y + index * lineHeight)
+    })
+  })
+
   // Draw components
   components.forEach(comp => {
     const def = getComponentByType(comp.type)
@@ -525,11 +605,12 @@ export function exportToPNG(wires, rectangles, components, getComponentByType, c
 }
 
 // Save to localStorage
-export function saveToLocalStorage(wires, rectangles, components) {
+export function saveToLocalStorage(wires, rectangles, textBoxes, components) {
   const project = {
     version: '1.0',
     wires,
     rectangles,
+    textBoxes,
     components,
     savedAt: new Date().toISOString()
   }

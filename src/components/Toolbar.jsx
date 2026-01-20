@@ -5,14 +5,14 @@ import { saveProjectToJSON, loadProjectFromJSON, exportToSVG, exportToPNG } from
 import { getComponentByType } from './componentLibrary'
 import ExportOptionsDialog from './ExportOptionsDialog'
 
-function Toolbar({ showGrid, setShowGrid, canvasRef }) {
+function Toolbar({ showGrid, setShowGrid, canvasRef, onAddTextBox }) {
   const [zoom, setZoom] = useState(100)
   const [showExportMenu, setShowExportMenu] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [exportType, setExportType] = useState(null)
   const fileInputRef = useRef(null)
   const exportMenuRef = useRef(null)
-  const { wires, rectangles, components, addWire, addComponent, drawingMode, setDrawingMode, undo, redo, canUndo, canRedo } = useSchematicStore()
+  const { wires, rectangles, textBoxes, components, addWire, addComponent, drawingMode, setDrawingMode, undo, redo, canUndo, canRedo } = useSchematicStore()
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -44,7 +44,7 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
   }
 
   const handleSave = () => {
-    saveProjectToJSON(wires, components, rectangles)
+    saveProjectToJSON(wires, components, rectangles, textBoxes)
   }
 
   const handleLoad = () => {
@@ -56,7 +56,7 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
     if (file) {
       loadProjectFromJSON(file, (project) => {
         // Clear current project
-        useSchematicStore.setState({ wires: [], rectangles: [], components: [] })
+        useSchematicStore.setState({ wires: [], rectangles: [], textBoxes: [], components: [] })
 
         // Load wires
         project.wires.forEach(wire => {
@@ -67,6 +67,13 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
         if (project.rectangles) {
           project.rectangles.forEach(rect => {
             useSchematicStore.getState().addRectangle(rect)
+          })
+        }
+
+        // Load text boxes
+        if (project.textBoxes) {
+          project.textBoxes.forEach(textBox => {
+            useSchematicStore.getState().addTextBox(textBox)
           })
         }
 
@@ -98,9 +105,9 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
 
   const handleExportWithOptions = async (options) => {
     if (exportType === 'svg') {
-      await exportToSVG(wires, rectangles, components, getComponentByType, options)
+      await exportToSVG(wires, rectangles, textBoxes, components, getComponentByType, options)
     } else if (exportType === 'png') {
-      exportToPNG(wires, rectangles, components, getComponentByType, canvasRef, options)
+      exportToPNG(wires, rectangles, textBoxes, components, getComponentByType, canvasRef, options)
     }
   }
 
@@ -179,6 +186,20 @@ function Toolbar({ showGrid, setShowGrid, canvasRef }) {
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect x="3" y="3" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none"/>
+          </svg>
+        </button>
+        <button
+          onClick={onAddTextBox}
+          title="テキストを追加"
+          style={{
+            padding: '4px 8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="10" y="15" fontSize="14" fill="currentColor" textAnchor="middle" fontFamily="sans-serif" fontWeight="bold">T</text>
           </svg>
         </button>
       </div>

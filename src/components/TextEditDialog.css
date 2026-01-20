@@ -1,0 +1,94 @@
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog-content {
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 20px;
+  min-width: 400px;
+  max-width: 600px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.dialog-content h3 {
+  margin: 0 0 15px 0;
+  color: #fff;
+  font-size: 18px;
+}
+
+.dialog-content textarea {
+  width: 100%;
+  padding: 10px;
+  background-color: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 100px;
+  box-sizing: border-box;
+}
+
+.dialog-content textarea:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.dialog-actions button {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.dialog-actions button:first-child {
+  background-color: #444;
+  color: #fff;
+}
+
+.dialog-actions button:first-child:hover {
+  background-color: #555;
+}
+
+.dialog-actions button:last-child {
+  background-color: #4a9eff;
+  color: #fff;
+}
+
+.dialog-actions button:last-child:hover {
+  background-color: #3a8eef;
+}
+
+.dialog-actions button:disabled {
+  background-color: #333;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.dialog-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #888;
+  text-align: center;
+}

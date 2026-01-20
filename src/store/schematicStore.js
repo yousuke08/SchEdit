@@ -5,18 +5,21 @@ const MAX_HISTORY = 50
 const useSchematicStore = create((set, get) => ({
   wires: [],
   rectangles: [],
+  textBoxes: [],
   components: [],
   selectedWireId: null,
   selectedRectId: null,
+  selectedTextBoxId: null,
   selectedComponentId: null,
   selectedWireIds: [],
   selectedRectIds: [],
+  selectedTextBoxIds: [],
   selectedComponentIds: [],
   wireColor: '#ffffff',
   wireThickness: 2,
   wireStyle: 'solid', // 'solid', 'double', 'dashed', 'dash-dot', 'wavy', 'double-wavy'
   drawingMode: 'line', // 'line' or 'rect'
-  clipboard: { components: [], wires: [], rectangles: [] },
+  clipboard: { components: [], wires: [], rectangles: [], textBoxes: [] },
   history: [],
   historyIndex: -1,
 
@@ -26,6 +29,7 @@ const useSchematicStore = create((set, get) => ({
     const snapshot = {
       wires: JSON.parse(JSON.stringify(state.wires)),
       rectangles: JSON.parse(JSON.stringify(state.rectangles)),
+      textBoxes: JSON.parse(JSON.stringify(state.textBoxes)),
       components: JSON.parse(JSON.stringify(state.components))
     }
 
@@ -55,13 +59,16 @@ const useSchematicStore = create((set, get) => ({
     set({
       wires: JSON.parse(JSON.stringify(snapshot.wires)),
       rectangles: JSON.parse(JSON.stringify(snapshot.rectangles)),
+      textBoxes: JSON.parse(JSON.stringify(snapshot.textBoxes)),
       components: JSON.parse(JSON.stringify(snapshot.components)),
       historyIndex: newIndex,
       selectedWireId: null,
       selectedRectId: null,
+      selectedTextBoxId: null,
       selectedComponentId: null,
       selectedWireIds: [],
       selectedRectIds: [],
+      selectedTextBoxIds: [],
       selectedComponentIds: []
     })
   },
@@ -77,13 +84,16 @@ const useSchematicStore = create((set, get) => ({
     set({
       wires: JSON.parse(JSON.stringify(snapshot.wires)),
       rectangles: JSON.parse(JSON.stringify(snapshot.rectangles)),
+      textBoxes: JSON.parse(JSON.stringify(snapshot.textBoxes)),
       components: JSON.parse(JSON.stringify(snapshot.components)),
       historyIndex: newIndex,
       selectedWireId: null,
       selectedRectId: null,
+      selectedTextBoxId: null,
       selectedComponentId: null,
       selectedWireIds: [],
       selectedRectIds: [],
+      selectedTextBoxIds: [],
       selectedComponentIds: []
     })
   },
@@ -166,6 +176,36 @@ const useSchematicStore = create((set, get) => ({
 
   setDrawingMode: (mode) => set({ drawingMode: mode }),
 
+  addTextBox: (textBox) => {
+    set((state) => ({
+      textBoxes: [...state.textBoxes, { ...textBox, id: crypto.randomUUID() }]
+    }))
+    get().saveToHistory()
+  },
+
+  removeTextBox: (id) => {
+    set((state) => ({
+      textBoxes: state.textBoxes.filter(t => t.id !== id),
+      selectedTextBoxId: state.selectedTextBoxId === id ? null : state.selectedTextBoxId
+    }))
+    get().saveToHistory()
+  },
+
+  updateTextBox: (id, updates) => {
+    set((state) => ({
+      textBoxes: state.textBoxes.map(t => t.id === id ? { ...t, ...updates } : t)
+    }))
+    get().saveToHistory()
+  },
+
+  updateTextBoxWithoutHistory: (id, updates) => {
+    set((state) => ({
+      textBoxes: state.textBoxes.map(t => t.id === id ? { ...t, ...updates } : t)
+    }))
+  },
+
+  setSelectedTextBox: (id) => set({ selectedTextBoxId: id, selectedWireId: null, selectedRectId: null, selectedComponentId: null }),
+
   addComponent: (component) => {
     set((state) => ({
       components: [...state.components, { ...component, id: crypto.randomUUID() }]
@@ -194,33 +234,38 @@ const useSchematicStore = create((set, get) => ({
     }))
   },
 
-  setSelectedComponent: (id) => set({ selectedComponentId: id, selectedWireId: null, selectedRectId: null }),
+  setSelectedComponent: (id) => set({ selectedComponentId: id, selectedWireId: null, selectedRectId: null, selectedTextBoxId: null }),
 
-  clearSelection: () => set({ selectedWireId: null, selectedRectId: null, selectedComponentId: null, selectedWireIds: [], selectedRectIds: [], selectedComponentIds: [] }),
+  clearSelection: () => set({ selectedWireId: null, selectedRectId: null, selectedTextBoxId: null, selectedComponentId: null, selectedWireIds: [], selectedRectIds: [], selectedTextBoxIds: [], selectedComponentIds: [] }),
 
-  setMultipleSelection: (wireIds, rectIds, componentIds) => set({
+  setMultipleSelection: (wireIds, rectIds, textBoxIds, componentIds) => set({
     selectedWireIds: wireIds,
     selectedRectIds: rectIds,
+    selectedTextBoxIds: textBoxIds,
     selectedComponentIds: componentIds,
     selectedWireId: null,
     selectedRectId: null,
+    selectedTextBoxId: null,
     selectedComponentId: null
   }),
 
-  addToSelection: (wireId, rectId, componentId) => set((state) => ({
+  addToSelection: (wireId, rectId, textBoxId, componentId) => set((state) => ({
     selectedWireIds: wireId && !state.selectedWireIds.includes(wireId)
       ? [...state.selectedWireIds, wireId]
       : state.selectedWireIds,
     selectedRectIds: rectId && !state.selectedRectIds.includes(rectId)
       ? [...state.selectedRectIds, rectId]
       : state.selectedRectIds,
+    selectedTextBoxIds: textBoxId && !state.selectedTextBoxIds.includes(textBoxId)
+      ? [...state.selectedTextBoxIds, textBoxId]
+      : state.selectedTextBoxIds,
     selectedComponentIds: componentId && !state.selectedComponentIds.includes(componentId)
       ? [...state.selectedComponentIds, componentId]
       : state.selectedComponentIds
   })),
 
-  copyToClipboard: (components, wires, rectangles) => set({
-    clipboard: { components, wires, rectangles }
+  copyToClipboard: (components, wires, rectangles, textBoxes) => set({
+    clipboard: { components, wires, rectangles, textBoxes }
   }),
 
   pasteFromClipboard: () => {
@@ -243,16 +288,25 @@ const useSchematicStore = create((set, get) => ({
         start: { x: rect.start.x + 20, y: rect.start.y + 20 },
         end: { x: rect.end.x + 20, y: rect.end.y + 20 }
       }))
+      const newTextBoxes = state.clipboard.textBoxes.map(textBox => ({
+        ...textBox,
+        id: crypto.randomUUID(),
+        x: textBox.x + 20,
+        y: textBox.y + 20
+      }))
       return {
         components: [...state.components, ...newComponents],
         wires: [...state.wires, ...newWires],
         rectangles: [...state.rectangles, ...newRectangles],
+        textBoxes: [...state.textBoxes, ...newTextBoxes],
         selectedComponentIds: newComponents.map(c => c.id),
         selectedWireIds: newWires.map(w => w.id),
         selectedRectIds: newRectangles.map(r => r.id),
+        selectedTextBoxIds: newTextBoxes.map(t => t.id),
         selectedComponentId: null,
         selectedWireId: null,
-        selectedRectId: null
+        selectedRectId: null,
+        selectedTextBoxId: null
       }
     })
     get().saveToHistory()
