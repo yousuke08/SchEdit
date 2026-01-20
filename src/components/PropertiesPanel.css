@@ -158,3 +158,41 @@
   background-color: #444;
   border-color: #666;
 }
+
+.align-buttons {
+  display: flex;
+  gap: 2px;
+  background-color: #333;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.align-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  border-radius: 3px;
+  color: #888;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.align-btn:hover {
+  background-color: #444;
+  color: #ccc;
+}
+
+.align-btn.active {
+  background-color: #555;
+  color: #fff;
+}
+
+.align-btn svg {
+  display: block;
+}

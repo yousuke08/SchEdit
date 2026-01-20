@@ -457,38 +457,80 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     // Draw text boxes
     textBoxes.forEach(textBox => {
       const isSelected = textBox.id === selectedTextBoxId || selectedTextBoxIds.includes(textBox.id)
-      ctx.fillStyle = textBox.color || '#ffffff'
-      ctx.font = `${textBox.fontSize || 16}px sans-serif`
-      ctx.textAlign = 'left'
-      ctx.textBaseline = 'top'
+      const fontSize = textBox.fontSize || 16
+      ctx.font = `${fontSize}px sans-serif`
 
       const lines = textBox.text.split('\n')
-      const lineHeight = (textBox.fontSize || 16) * 1.2
+      const lineHeight = fontSize * 1.2
+
+      // Calculate text dimensions
+      const textWidth = Math.max(...lines.map(line => ctx.measureText(line).width))
+      const textHeight = lines.length * lineHeight
+
+      // Calculate frame size (snap to grid, at least large enough for text)
+      const padding = 2
+      const minWidth = textWidth + padding * 2
+      const minHeight = textHeight + padding * 2
+      const frameWidth = textBox.width || Math.ceil(minWidth / GRID_SIZE) * GRID_SIZE
+      const frameHeight = textBox.height || Math.ceil(minHeight / GRID_SIZE) * GRID_SIZE
+
+      // Draw frame only when selected
+      if (isSelected) {
+        ctx.strokeStyle = '#ffff00'
+        ctx.lineWidth = 1
+        ctx.setLineDash([5, 5])
+        ctx.strokeRect(textBox.x, textBox.y, frameWidth, frameHeight)
+        ctx.setLineDash([])
+      }
+
+      // Calculate text position based on alignment
+      const textAlign = textBox.textAlign || 'left'
+      const verticalAlign = textBox.verticalAlign || 'top'
+
+      let textX = textBox.x + padding
+      if (textAlign === 'center') {
+        textX = textBox.x + frameWidth / 2
+      } else if (textAlign === 'right') {
+        textX = textBox.x + frameWidth - padding
+      }
+
+      let textY = textBox.y + padding
+      if (verticalAlign === 'middle') {
+        textY = textBox.y + (frameHeight - textHeight) / 2
+      } else if (verticalAlign === 'bottom') {
+        textY = textBox.y + frameHeight - textHeight - padding
+      }
+
+      // Draw text
+      ctx.fillStyle = textBox.color || '#ffffff'
+      ctx.textAlign = textAlign
+      ctx.textBaseline = 'top'
 
       lines.forEach((line, index) => {
-        ctx.fillText(line, textBox.x, textBox.y + index * lineHeight)
+        ctx.fillText(line, textX, textY + index * lineHeight)
       })
 
-      // Draw selection box if selected
+      // Reset text align
+      ctx.textAlign = 'left'
+
+      // Draw selection indicators if selected
       if (isSelected) {
         ctx.save()
-        ctx.strokeStyle = '#ffff00'
-        ctx.lineWidth = 2 / zoom
-        ctx.setLineDash([5 / zoom, 5 / zoom])
-
-        // Measure text bounds
-        const textMetrics = ctx.measureText(textBox.text)
-        const textWidth = Math.max(...lines.map(line => ctx.measureText(line).width))
-        const textHeight = lines.length * lineHeight
-
-        ctx.strokeRect(
-          textBox.x - 5,
-          textBox.y - 5,
-          textWidth + 10,
-          textHeight + 10
-        )
-
-        ctx.setLineDash([])
+        ctx.fillStyle = '#ffff00'
+        const pointRadius = 4
+        // Corner points
+        ctx.beginPath()
+        ctx.arc(textBox.x, textBox.y, pointRadius, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.beginPath()
+        ctx.arc(textBox.x + frameWidth, textBox.y, pointRadius, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.beginPath()
+        ctx.arc(textBox.x, textBox.y + frameHeight, pointRadius, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.beginPath()
+        ctx.arc(textBox.x + frameWidth, textBox.y + frameHeight, pointRadius, 0, Math.PI * 2)
+        ctx.fill()
         ctx.restore()
       }
     })
@@ -647,17 +689,25 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
       const canvasEl = canvasRef.current
       const ctx = canvasEl.getContext('2d')
       for (const textBox of [...textBoxes].reverse()) {
-        ctx.font = `${textBox.fontSize || 16}px sans-serif`
+        const fontSize = textBox.fontSize || 16
+        ctx.font = `${fontSize}px sans-serif`
         const lines = textBox.text.split('\n')
-        const lineHeight = (textBox.fontSize || 16) * 1.2
+        const lineHeight = fontSize * 1.2
         const textWidth = Math.max(...lines.map(line => ctx.measureText(line).width))
         const textHeight = lines.length * lineHeight
 
+        // Calculate frame size (same as rendering)
+        const padding = 2
+        const minWidth = textWidth + padding * 2
+        const minHeight = textHeight + padding * 2
+        const frameWidth = textBox.width || Math.ceil(minWidth / GRID_SIZE) * GRID_SIZE
+        const frameHeight = textBox.height || Math.ceil(minHeight / GRID_SIZE) * GRID_SIZE
+
         if (
-          worldPos.x >= textBox.x - 5 &&
-          worldPos.x <= textBox.x + textWidth + 5 &&
-          worldPos.y >= textBox.y - 5 &&
-          worldPos.y <= textBox.y + textHeight + 5
+          worldPos.x >= textBox.x &&
+          worldPos.x <= textBox.x + frameWidth &&
+          worldPos.y >= textBox.y &&
+          worldPos.y <= textBox.y + frameHeight
         ) {
           clickedTextBox = textBox
           break
@@ -1587,17 +1637,25 @@ const Canvas = forwardRef(({ showGrid }, ref) => {
     // Check if double-clicking on an existing text box
     const canvasCtx = canvas.getContext('2d')
     for (const textBox of textBoxes) {
-      canvasCtx.font = `${textBox.fontSize || 16}px sans-serif`
+      const fontSize = textBox.fontSize || 16
+      canvasCtx.font = `${fontSize}px sans-serif`
       const lines = textBox.text.split('\n')
-      const lineHeight = (textBox.fontSize || 16) * 1.2
+      const lineHeight = fontSize * 1.2
       const textWidth = Math.max(...lines.map(line => canvasCtx.measureText(line).width))
       const textHeight = lines.length * lineHeight
 
+      // Calculate frame size (same as rendering)
+      const padding = 2
+      const minWidth = textWidth + padding * 2
+      const minHeight = textHeight + padding * 2
+      const frameWidth = textBox.width || Math.ceil(minWidth / GRID_SIZE) * GRID_SIZE
+      const frameHeight = textBox.height || Math.ceil(minHeight / GRID_SIZE) * GRID_SIZE
+
       if (
-        worldPos.x >= textBox.x - 5 &&
-        worldPos.x <= textBox.x + textWidth + 5 &&
-        worldPos.y >= textBox.y - 5 &&
-        worldPos.y <= textBox.y + textHeight + 5
+        worldPos.x >= textBox.x &&
+        worldPos.x <= textBox.x + frameWidth &&
+        worldPos.y >= textBox.y &&
+        worldPos.y <= textBox.y + frameHeight
       ) {
         // Edit existing text box
         setEditingTextBoxId(textBox.id)

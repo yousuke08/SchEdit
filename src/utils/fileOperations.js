@@ -46,7 +46,11 @@ export function saveProjectToJSON(wires, components, rectangles = [], textBoxes 
       y: textBox.y,
       text: textBox.text,
       fontSize: textBox.fontSize || 16,
-      color: textBox.color || '#ffffff'
+      color: textBox.color || '#ffffff',
+      textAlign: textBox.textAlign || 'left',
+      verticalAlign: textBox.verticalAlign || 'top',
+      width: textBox.width || null,
+      height: textBox.height || null
     })),
     components: components.map(comp => ({
       type: comp.type,
@@ -102,15 +106,23 @@ function calculateBounds(wires, rectangles, textBoxes, components, getComponentB
   })
 
   textBoxes.forEach(textBox => {
-    // Rough estimate: 10px per character width, fontSize * 1.2 * lines for height
+    const fontSize = textBox.fontSize || 16
     const lines = textBox.text.split('\n')
-    const textWidth = Math.max(...lines.map(line => line.length * (textBox.fontSize || 16) * 0.6))
-    const textHeight = lines.length * (textBox.fontSize || 16) * 1.2
+    const textWidth = Math.max(...lines.map(line => line.length * fontSize * 0.6))
+    const textHeight = lines.length * fontSize * 1.2
+
+    // Calculate frame size (snap to grid, at least large enough for text)
+    const padding = 2
+    const gridSize = 20
+    const minWidth = textWidth + padding * 2
+    const minHeight = textHeight + padding * 2
+    const frameWidth = textBox.width || Math.ceil(minWidth / gridSize) * gridSize
+    const frameHeight = textBox.height || Math.ceil(minHeight / gridSize) * gridSize
 
     minX = Math.min(minX, textBox.x)
     minY = Math.min(minY, textBox.y)
-    maxX = Math.max(maxX, textBox.x + textWidth)
-    maxY = Math.max(maxY, textBox.y + textHeight)
+    maxX = Math.max(maxX, textBox.x + frameWidth)
+    maxY = Math.max(maxY, textBox.y + frameHeight)
   })
 
   components.forEach(comp => {
@@ -263,6 +275,9 @@ function generateRectanglesSVG(rectangles, effectiveWireColor, invertColors) {
 // Generate SVG for text boxes
 function generateTextBoxesSVG(textBoxes, effectiveWireColor, invertColors) {
   let svg = ''
+  const gridSize = 20
+  const padding = 2
+
   textBoxes.forEach(textBox => {
     let fillColor = effectiveWireColor || textBox.color || '#ffffff'
     if (invertColors) {
@@ -272,9 +287,40 @@ function generateTextBoxesSVG(textBoxes, effectiveWireColor, invertColors) {
     const fontSize = textBox.fontSize || 16
     const lineHeight = fontSize * 1.2
 
+    // Calculate text dimensions (rough estimate for SVG)
+    const textWidth = Math.max(...lines.map(line => line.length * fontSize * 0.6))
+    const textHeight = lines.length * lineHeight
+
+    // Calculate frame size
+    const minWidth = textWidth + padding * 2
+    const minHeight = textHeight + padding * 2
+    const frameWidth = textBox.width || Math.ceil(minWidth / gridSize) * gridSize
+    const frameHeight = textBox.height || Math.ceil(minHeight / gridSize) * gridSize
+
+    // Calculate text position based on alignment
+    const textAlign = textBox.textAlign || 'left'
+    const verticalAlign = textBox.verticalAlign || 'top'
+
+    let anchor = 'start'
+    let textX = textBox.x + padding
+    if (textAlign === 'center') {
+      anchor = 'middle'
+      textX = textBox.x + frameWidth / 2
+    } else if (textAlign === 'right') {
+      anchor = 'end'
+      textX = textBox.x + frameWidth - padding
+    }
+
+    let textY = textBox.y + padding
+    if (verticalAlign === 'middle') {
+      textY = textBox.y + (frameHeight - textHeight) / 2
+    } else if (verticalAlign === 'bottom') {
+      textY = textBox.y + frameHeight - textHeight - padding
+    }
+
     lines.forEach((line, index) => {
-      const y = textBox.y + index * lineHeight + fontSize
-      svg += `    <text x="${textBox.x}" y="${y}" fill="${fillColor}" font-size="${fontSize}" font-family="sans-serif">${escapeXml(line)}</text>\n`
+      const y = textY + index * lineHeight + fontSize
+      svg += `    <text x="${textX}" y="${y}" fill="${fillColor}" font-size="${fontSize}" font-family="sans-serif" text-anchor="${anchor}">${escapeXml(line)}</text>\n`
     })
   })
   return svg
@@ -464,15 +510,25 @@ export function exportToPNG(wires, rectangles, textBoxes, components, getCompone
     maxY = Math.max(maxY, rect.start.y, rect.end.y)
   })
 
+  const gridSize = 20
+  const textPadding = 2
+
   textBoxes.forEach(textBox => {
+    const fontSize = textBox.fontSize || 16
     const lines = textBox.text.split('\n')
-    const textWidth = Math.max(...lines.map(line => line.length * (textBox.fontSize || 16) * 0.6))
-    const textHeight = lines.length * (textBox.fontSize || 16) * 1.2
+    const textWidth = Math.max(...lines.map(line => line.length * fontSize * 0.6))
+    const textHeight = lines.length * fontSize * 1.2
+
+    // Calculate frame size (snap to grid, at least large enough for text)
+    const minWidth = textWidth + textPadding * 2
+    const minHeight = textHeight + textPadding * 2
+    const frameWidth = textBox.width || Math.ceil(minWidth / gridSize) * gridSize
+    const frameHeight = textBox.height || Math.ceil(minHeight / gridSize) * gridSize
 
     minX = Math.min(minX, textBox.x)
     minY = Math.min(minY, textBox.y)
-    maxX = Math.max(maxX, textBox.x + textWidth)
-    maxY = Math.max(maxY, textBox.y + textHeight)
+    maxX = Math.max(maxX, textBox.x + frameWidth)
+    maxY = Math.max(maxY, textBox.y + frameHeight)
   })
 
   components.forEach(comp => {
@@ -494,7 +550,6 @@ export function exportToPNG(wires, rectangles, textBoxes, components, getCompone
   }
 
   const padding = 50
-  const gridSize = 20
   const width = maxX - minX + padding * 2
   const height = maxY - minY + padding * 2
   const offsetX = -minX + padding
@@ -677,17 +732,52 @@ export function exportToPNG(wires, rectangles, textBoxes, components, getCompone
     if (invertColors) {
       fillColor = invertColor(fillColor)
     }
-    ctx.fillStyle = fillColor
-    ctx.font = `${textBox.fontSize || 16}px sans-serif`
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'top'
+    const fontSize = textBox.fontSize || 16
+    ctx.font = `${fontSize}px sans-serif`
 
     const lines = textBox.text.split('\n')
-    const lineHeight = (textBox.fontSize || 16) * 1.2
+    const lineHeight = fontSize * 1.2
+
+    // Calculate text dimensions
+    const textWidth = Math.max(...lines.map(line => ctx.measureText(line).width))
+    const textHeight = lines.length * lineHeight
+
+    // Calculate frame size (snap to grid, at least large enough for text)
+    const padding = 2
+    const minWidth = textWidth + padding * 2
+    const minHeight = textHeight + padding * 2
+    const frameWidth = textBox.width || Math.ceil(minWidth / gridSize) * gridSize
+    const frameHeight = textBox.height || Math.ceil(minHeight / gridSize) * gridSize
+
+    // Calculate text position based on alignment
+    const textAlign = textBox.textAlign || 'left'
+    const verticalAlign = textBox.verticalAlign || 'top'
+
+    let textX = textBox.x + padding
+    if (textAlign === 'center') {
+      textX = textBox.x + frameWidth / 2
+    } else if (textAlign === 'right') {
+      textX = textBox.x + frameWidth - padding
+    }
+
+    let textY = textBox.y + padding
+    if (verticalAlign === 'middle') {
+      textY = textBox.y + (frameHeight - textHeight) / 2
+    } else if (verticalAlign === 'bottom') {
+      textY = textBox.y + frameHeight - textHeight - padding
+    }
+
+    // Draw text
+    ctx.fillStyle = fillColor
+    ctx.textAlign = textAlign
+    ctx.textBaseline = 'top'
 
     lines.forEach((line, index) => {
-      ctx.fillText(line, textBox.x, textBox.y + index * lineHeight)
+      ctx.fillText(line, textX, textY + index * lineHeight)
     })
+
+    // Reset text align
+    ctx.textAlign = 'left'
   })
 
   // Draw components

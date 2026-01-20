@@ -185,7 +185,14 @@ const useSchematicStore = create((set, get) => ({
 
   addTextBox: (textBox) => {
     set((state) => ({
-      textBoxes: [...state.textBoxes, { ...textBox, id: crypto.randomUUID() }]
+      textBoxes: [...state.textBoxes, {
+        ...textBox,
+        id: crypto.randomUUID(),
+        textAlign: textBox.textAlign || 'left',
+        verticalAlign: textBox.verticalAlign || 'top',
+        width: textBox.width || null,
+        height: textBox.height || null
+      }]
     }))
     get().saveToHistory()
   },

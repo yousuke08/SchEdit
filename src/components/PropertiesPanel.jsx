@@ -35,6 +35,8 @@ function PropertiesPanel() {
   const [localFontSize, setLocalFontSize] = useState(16)
   const [localArrowStart, setLocalArrowStart] = useState(wireArrowStart)
   const [localArrowEnd, setLocalArrowEnd] = useState(wireArrowEnd)
+  const [localTextAlign, setLocalTextAlign] = useState('left')
+  const [localVerticalAlign, setLocalVerticalAlign] = useState('top')
 
   const defaultArrow = { type: 'none', fill: 'wire', inward: false }
 
@@ -52,6 +54,8 @@ function PropertiesPanel() {
     } else if (selectedTextBox) {
       setLocalColor(selectedTextBox.color || '#ffffff')
       setLocalFontSize(selectedTextBox.fontSize || 16)
+      setLocalTextAlign(selectedTextBox.textAlign || 'left')
+      setLocalVerticalAlign(selectedTextBox.verticalAlign || 'top')
     } else {
       setLocalColor(wireColor)
       setLocalThickness(wireThickness)
@@ -79,6 +83,20 @@ function PropertiesPanel() {
     setLocalFontSize(value)
     if (selectedTextBox) {
       updateTextBox(selectedTextBox.id, { fontSize: value })
+    }
+  }
+
+  const handleTextAlignChange = (textAlign) => {
+    setLocalTextAlign(textAlign)
+    if (selectedTextBox) {
+      updateTextBox(selectedTextBox.id, { textAlign })
+    }
+  }
+
+  const handleVerticalAlignChange = (verticalAlign) => {
+    setLocalVerticalAlign(verticalAlign)
+    if (selectedTextBox) {
+      updateTextBox(selectedTextBox.id, { verticalAlign })
     }
   }
 
@@ -234,6 +252,79 @@ function PropertiesPanel() {
               onChange={(e) => handleFontSizeChange(e.target.value)}
             />
             <span>{localFontSize}px</span>
+          </div>
+          <div className="property-item">
+            <label>横配置:</label>
+            <div className="align-buttons">
+              <button
+                className={`align-btn ${localTextAlign === 'left' ? 'active' : ''}`}
+                onClick={() => handleTextAlignChange('left')}
+                title="左寄せ"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16">
+                  <rect x="2" y="3" width="10" height="2" fill="currentColor"/>
+                  <rect x="2" y="7" width="8" height="2" fill="currentColor"/>
+                  <rect x="2" y="11" width="12" height="2" fill="currentColor"/>
+                </svg>
+              </button>
+              <button
+                className={`align-btn ${localTextAlign === 'center' ? 'active' : ''}`}
+                onClick={() => handleTextAlignChange('center')}
+                title="中央揃え"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16">
+                  <rect x="3" y="3" width="10" height="2" fill="currentColor"/>
+                  <rect x="4" y="7" width="8" height="2" fill="currentColor"/>
+                  <rect x="2" y="11" width="12" height="2" fill="currentColor"/>
+                </svg>
+              </button>
+              <button
+                className={`align-btn ${localTextAlign === 'right' ? 'active' : ''}`}
+                onClick={() => handleTextAlignChange('right')}
+                title="右寄せ"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16">
+                  <rect x="4" y="3" width="10" height="2" fill="currentColor"/>
+                  <rect x="6" y="7" width="8" height="2" fill="currentColor"/>
+                  <rect x="2" y="11" width="12" height="2" fill="currentColor"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div className="property-item">
+            <label>縦配置:</label>
+            <div className="align-buttons">
+              <button
+                className={`align-btn ${localVerticalAlign === 'top' ? 'active' : ''}`}
+                onClick={() => handleVerticalAlignChange('top')}
+                title="上寄せ"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16">
+                  <rect x="2" y="2" width="12" height="2" fill="currentColor"/>
+                  <rect x="6" y="5" width="4" height="9" fill="currentColor" opacity="0.5"/>
+                </svg>
+              </button>
+              <button
+                className={`align-btn ${localVerticalAlign === 'middle' ? 'active' : ''}`}
+                onClick={() => handleVerticalAlignChange('middle')}
+                title="中央揃え"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16">
+                  <rect x="2" y="7" width="12" height="2" fill="currentColor"/>
+                  <rect x="6" y="3" width="4" height="10" fill="currentColor" opacity="0.5"/>
+                </svg>
+              </button>
+              <button
+                className={`align-btn ${localVerticalAlign === 'bottom' ? 'active' : ''}`}
+                onClick={() => handleVerticalAlignChange('bottom')}
+                title="下寄せ"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16">
+                  <rect x="2" y="12" width="12" height="2" fill="currentColor"/>
+                  <rect x="6" y="2" width="4" height="9" fill="currentColor" opacity="0.5"/>
+                </svg>
+              </button>
+            </div>
           </div>
           <div className="property-info">
             <p>位置: ({selectedTextBox.x}, {selectedTextBox.y})</p>
